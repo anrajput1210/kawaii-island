@@ -103,6 +103,8 @@ public sealed class AppConfig
     {
         Window ??= new(); Appearance ??= new(); Modules ??= new(); Behavior ??= new();
         Modules.Mail ??= new(); Modules.Notifications ??= new(); Modules.Music ??= new(); Modules.Shortcuts ??= new();
+        Modules.Code ??= new();
+        Modules.Code.Port = Math.Clamp(Modules.Code.Port, 1024, 65535);
         Modules.Notifications.Muted ??= [];
         Modules.Shortcuts.Items ??= [];
 
@@ -159,6 +161,14 @@ public sealed class ModulesConfig
     public NotificationsConfig Notifications { get; set; } = new();
     public MusicConfig Music { get; set; } = new();
     public ShortcutsConfig Shortcuts { get; set; } = new();
+    public CodeConfig Code { get; set; } = new();
+}
+
+/// <summary>Code mode: Claude Code session companion. Listener is 127.0.0.1-only; data is kept in memory only.</summary>
+public sealed class CodeConfig
+{
+    public bool Enabled { get; set; }
+    public int Port { get; set; } = 47811;
 }
 
 /// <summary>No password here — credentials are DPAPI-encrypted in a separate local file (Phase 9).</summary>

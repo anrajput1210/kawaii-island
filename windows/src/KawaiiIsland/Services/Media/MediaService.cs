@@ -173,7 +173,8 @@ internal sealed class MediaService : IDisposable
                     c.IsPreviousEnabled, c.IsPlayPauseToggleEnabled, c.IsNextEnabled,
                     _art, _tint);
             }
-            catch (Exception ex) when (ex is COMException or InvalidOperationException) { }
+            // The app closed mid-call: WinRT hands back nulls (NullReference) or dead RPC objects. Treat it as "no music".
+            catch (Exception) { }
         }
         Changed?.Invoke(snap);
     }

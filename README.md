@@ -45,14 +45,17 @@ npm installs it per-user to `%LOCALAPPDATA%\Programs\KawaiiIsland`, adds **Kawai
 
 ### Mac (macOS 13+, Apple silicon and Intel)
 
-**Download:** [KawaiiIsland-macOS.dmg](https://github.com/anrajput1210/kawaii-island/releases/latest/download/KawaiiIsland-macOS.dmg) from the [latest release](https://github.com/anrajput1210/kawaii-island/releases/latest), open it and drag **Kawaii Island** to **Applications**. Or with npm:
+**Recommended: one line in Terminal** (no security prompt):
 
 ```bash
-npm install -g kawaii-island
-kawaii-island install   # puts Kawaii Island.app in ~/Applications, opens it at login, and launches it
+curl -fsSL https://raw.githubusercontent.com/anrajput1210/kawaii-island/main/installer/mac/install.sh | sh
 ```
 
-The app isn't notarized yet, so the first time you open a downloaded copy macOS says it can't check it. Right-click the app → **Open** → **Open**, or run `xattr -dr com.apple.quarantine "/Applications/Kawaii Island.app"` once. (The npm install doesn't need this.) On a MacBook with a notch the island sits right on the notch; otherwise it's a regular island at the top centre. **Control+Option+I** opens it.
+It downloads the latest release, puts **Kawaii Island** in `~/Applications`, opens it at login and starts it ([read the script](installer/mac/install.sh) first if you like; it's 20 lines). Or with npm: `npm install -g kawaii-island` then `kawaii-island install`.
+
+**Prefer the DMG?** [KawaiiIsland-macOS.dmg](https://github.com/anrajput1210/kawaii-island/releases/latest/download/KawaiiIsland-macOS.dmg): open it and drag **Kawaii Island** to **Applications**. Because the app isn't notarized by Apple yet (that needs a paid Apple Developer ID), macOS shows *"Apple could not verify 'Kawaii Island' is free of malware"* the first time. That is the standard message for any un-notarized app, not a detection. To open it anyway: click **Done**, then go to **System Settings → Privacy & Security**, scroll down to *"Kawaii Island" was blocked*, click **Open Anyway** and confirm. You only do this once. (Or run `xattr -dr com.apple.quarantine "/Applications/Kawaii Island.app"`.)
+
+On a MacBook with a notch the island sits right on the notch; otherwise it's a regular island at the top centre. **Control+Option+I** opens it.
 
 ### Both: other commands
 

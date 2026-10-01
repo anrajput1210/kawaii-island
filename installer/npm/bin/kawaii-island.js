@@ -40,7 +40,10 @@ function install({ launch = true } = {}) {
   if (!fs.existsSync(bundledExe)) return fail('This package has no app build (dist/KawaiiIsland.exe). Install it from npm, or run "npm run build" in installer/npm.');
   stop(); // replacing a running exe fails on Windows
   fs.mkdirSync(installDir, { recursive: true });
-  fs.copyFileSync(bundledExe, installedExe);
+  for (let i = 0; ; i++) { // taskkill returns before Windows releases the exe: retry for up to ~5 s
+    try { fs.copyFileSync(bundledExe, installedExe); break; }
+    catch (e) { if (i >= 25 || !['EBUSY', 'EPERM'].includes(e.code)) throw e; Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 200); }
+  }
   const ps = s => s.replace(/'/g, "''"); // PowerShell single-quoted string
   quiet('powershell', ['-NoProfile', '-NonInteractive', '-Command',
     `$s = (New-Object -ComObject WScript.Shell).CreateShortcut('${ps(shortcut)}'); $s.TargetPath = '${ps(installedExe)}'; ` +

@@ -112,6 +112,15 @@ internal static partial class Win32
         DwmSetWindowAttribute(hwnd, 20, ref on, sizeof(int)); // DWMWA_USE_IMMERSIVE_DARK_MODE
     }
 
+    /// <summary>Dark acrylic (blurred) backdrop with rounded corners, like a Windows 11 / macOS menu. Windows 10 ignores both.</summary>
+    public static void UseGlassBackdrop(nint hwnd)
+    {
+        UseDarkTitleBar(hwnd, true);
+        int round = 2, acrylic = 3;
+        DwmSetWindowAttribute(hwnd, 33, ref round, sizeof(int));   // DWMWA_WINDOW_CORNER_PREFERENCE = DWMWCP_ROUND
+        DwmSetWindowAttribute(hwnd, 38, ref acrylic, sizeof(int)); // DWMWA_SYSTEMBACKDROP_TYPE = DWMSBT_TRANSIENTWINDOW
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     private struct SYSTEM_POWER_STATUS { public byte ACLineStatus, BatteryFlag, BatteryLifePercent, SystemStatusFlag; public int BatteryLifeTime, BatteryFullLifeTime; }
 

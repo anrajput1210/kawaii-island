@@ -35,6 +35,7 @@ A cute, customizable **Dynamic Island for Windows 11** (macOS version in progres
 
 ```powershell
 npm install -g kawaii-island
+kawaii-island install   # newer npm skips install scripts; this does the setup either way
 ```
 
 That's it: no .NET needed (the package ships a self-contained app). It installs per-user to `%LOCALAPPDATA%\Programs\KawaiiIsland`, adds **Kawaii Island** to the Start menu, starts with Windows (turn that off in Settings → General) and launches. Other commands:

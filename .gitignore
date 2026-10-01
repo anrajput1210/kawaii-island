@@ -33,3 +33,4 @@ installer/out/
 # npm package build output
 installer/npm/dist/
 *.tgz
+!installer/npm/bin/

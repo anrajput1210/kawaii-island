@@ -142,7 +142,8 @@ public partial class App : Application
         menu.Items.Add(Check("Auto-hide in fullscreen", island.AutoHideFullscreen, on => island.SetAutoHide(on, island.AutoHideAlways)));
         menu.Items.Add(Check("Auto-hide always", island.AutoHideAlways, on => island.SetAutoHide(island.AutoHideFullscreen, on)));
         menu.Items.Add(new Separator());
-        menu.Items.Add(Choice("Mascot", AppConfig.Mascots.Select(m => (MascotName(m), m)).ToArray(),
+        string[] mascots = [.. AppConfig.Mascots, .. File.Exists(AppConfig.CustomMascotPath) ? [AppConfig.CustomMascot] : Array.Empty<string>(), AppConfig.NoMascot];
+        menu.Items.Add(Choice("Mascot", mascots.Select(m => (MascotName(m), m)).ToArray(),
                               Config.Current.Appearance.Mascot, v => { Config.Current.Appearance.Mascot = v; SettingsChanged(); }));
         menu.Items.Add(Choice("Collapse after", CollapseChoices, island.AutoCollapseSeconds.ToString(), v => island.SetAutoCollapse(int.Parse(v))));
         menu.Items.Add(Check("Code mode (Claude Code)", island.CodeMode, SetCodeMode));
@@ -165,7 +166,8 @@ public partial class App : Application
 
     internal static string MascotName(string key) => key switch
     {
-        "kiko" => "Kiko · anime girl", "miso" => "Miso · cat", "bun" => "Bun · bunny", "bolt" => "Bolt · robot", "ribbit" => "Ribbit · frog", _ => key,
+        "kiko" => "Kiko · anime girl", "miso" => "Miso · cat", "bun" => "Bun · bunny", "bolt" => "Bolt · robot", "ribbit" => "Ribbit · frog",
+        AppConfig.NoMascot => "No mascot", AppConfig.CustomMascot => "Your own picture", _ => key,
     };
 
     /// <summary>Persist (debounced 500 ms) and re-apply to the island (debounced 150 ms, re-docks the AppBar).</summary>
@@ -226,7 +228,8 @@ public partial class App : Application
         const string title = "Kawaii Island · Code mode";
         if (on)
         {
-            var answer = MessageBox.Show(
+            bool first = !code.Consented;
+            var answer = !first ? MessageBoxResult.Yes : MessageBox.Show(
                 "Code mode shows your Claude Code sessions on the island: what Claude is doing, context used, " +
                 "and your 5-hour and weekly plan usage.\n\n" +
                 $"It adds Kawaii Island hooks (and a status line, if you don't already have one) to:\n{ClaudeSettings.SettingsPath}\n\n" +
@@ -238,9 +241,9 @@ public partial class App : Application
             try
             {
                 bool statusLine = ClaudeSettings.Apply(enable: true, code.Port);
-                code.Enabled = true;
+                code.Enabled = code.Consented = true;
                 Config.SaveSoon();
-                MessageBox.Show(
+                if (first) MessageBox.Show(
                     "Code mode is on. Restart any open Claude Code sessions: hooks load when a session starts." +
                     (statusLine ? "" : "\n\nYou already use a custom status line, so 5-hour/weekly usage can't be shown. Activity and context still work."),
                     title, MessageBoxButton.OK, MessageBoxImage.Information);

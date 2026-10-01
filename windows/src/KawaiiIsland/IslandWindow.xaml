@@ -7,7 +7,8 @@
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize" ShowActivated="False"
         UseLayoutRounding="True">
     <Window.Resources>
-        <!-- Round icon button (media controls). Glyphs: Segoe Fluent Icons on Windows 11, MDL2 on 10. -->
+        <!-- Icon button (media controls, ‹ ›, coding toggle): bare glyph, no background shape; hover lights it up.
+             Glyphs: Segoe Fluent Icons on Windows 11, MDL2 on 10. -->
         <Style x:Key="Glyph" TargetType="Button">
             <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
             <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
@@ -15,12 +16,12 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg" Background="Transparent" CornerRadius="99" Padding="7">
+                        <Border x:Name="Bg" Background="Transparent" Padding="7">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource IslandTrack}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="Bg" Property="Opacity" Value="0.35"/>
@@ -30,9 +31,9 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- Rounded text button (notification actions). -->
-        <Style x:Key="PillButton" TargetType="Button">
-            <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
+        <!-- Plain text button (notification actions): no oval, just a clear label that lights up on hover. -->
+        <Style x:Key="TextButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource IslandMuted}"/>
             <Setter Property="FontFamily" Value="{DynamicResource IslandFont}"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -40,12 +41,12 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg" Background="{DynamicResource IslandTrack}" CornerRadius="99" Padding="14,6">
+                        <Border x:Name="Bg" Background="Transparent" Padding="0,6,16,6">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Opacity" Value="0.8"/>
+                                <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -87,7 +88,8 @@
                HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,1,0,0"
                Stroke="{DynamicResource Accent}" StrokeThickness="1.5" StrokeDashArray="3 2.5"/>
     <Border x:Name="Pill" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,6,0,0"
-            Background="{DynamicResource IslandBackground}" RenderTransformOrigin="0.5,0" Cursor="Hand">
+            Background="{DynamicResource IslandBackground}" BorderThickness="1" BorderBrush="#1FFFFFFF"
+            RenderTransformOrigin="0.5,0" Cursor="Hand">
         <Border.RenderTransform>
             <TransformGroup>
                 <ScaleTransform x:Name="HoverScale"/>
@@ -142,6 +144,8 @@
                     <!-- Header for module views: tabs (when needed) + small clock + mascot -->
                     <DockPanel x:Name="TabRow" Margin="0,0,0,8" Visibility="Collapsed">
                         <c:MascotControl x:Name="MascotTiny" DockPanel.Dock="Right" Width="22" Height="22" Margin="8,0,0,0"/>
+                        <Button x:Name="CodeToggleSmall" DockPanel.Dock="Right" Style="{StaticResource Glyph}" Content="&#xE943;" FontSize="13"
+                                Margin="0,-7,2,-7" AutomationProperties.Name="Coding mode"/>
                         <TextBlock x:Name="SmallClock" DockPanel.Dock="Right" VerticalAlignment="Center" Foreground="{DynamicResource IslandMuted}"
                                    FontFamily="{DynamicResource IslandFont}" FontSize="12" FontWeight="SemiBold"/>
                         <StackPanel x:Name="Tabs" Orientation="Horizontal" VerticalAlignment="Center">
@@ -152,6 +156,8 @@
                     </DockPanel>
                     <DockPanel x:Name="MainRow">
                         <c:MascotControl x:Name="MascotLarge" DockPanel.Dock="Right" Width="40" Height="40" VerticalAlignment="Top"/>
+                        <Button x:Name="CodeToggle" DockPanel.Dock="Right" Style="{StaticResource Glyph}" Content="&#xE943;" FontSize="16"
+                                VerticalAlignment="Top" Margin="0,2,6,0" AutomationProperties.Name="Coding mode"/>
                         <StackPanel x:Name="ClockBlock">
                             <TextBlock x:Name="BigClock" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
                                        FontWeight="SemiBold" FontSize="34"/>
@@ -165,6 +171,12 @@
                                 <Ellipse x:Name="CodeDotLarge" Width="8" Height="8" VerticalAlignment="Center"/>
                                 <TextBlock x:Name="CodeStateText" Margin="7,0,0,0" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
                                            FontSize="12" TextTrimming="CharacterEllipsis" MaxWidth="400"/>
+                            </StackPanel>
+                            <!-- Permission request: answer here instead of the terminal -->
+                            <StackPanel x:Name="ApprovalRow" Orientation="Horizontal" Margin="0,4,0,0" Visibility="Collapsed">
+                                <Button x:Name="AllowButton" Style="{StaticResource TextButton}" Content="Allow" Foreground="#30D158" FontSize="13"/>
+                                <Button x:Name="DenyButton" Style="{StaticResource TextButton}" Content="Deny" Foreground="#FF453A" FontSize="13"/>
+                                <Button x:Name="TerminalButton" Style="{StaticResource TextButton}" Content="Answer in terminal" FontSize="13"/>
                             </StackPanel>
                         </StackPanel>
                     </DockPanel>
@@ -234,8 +246,8 @@
                                 <Button x:Name="AlertNext" Style="{StaticResource Glyph}" Content="&#xE76C;" FontSize="11" ToolTip="Older" AutomationProperties.Name="Older notification"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
-                                <Button x:Name="MuteAppButton" Style="{StaticResource PillButton}"/>
-                                <Button x:Name="ClearAlertsButton" Style="{StaticResource PillButton}" Content="Clear all" Margin="8,0,0,0"/>
+                                <Button x:Name="MuteAppButton" Style="{StaticResource TextButton}"/>
+                                <Button x:Name="ClearAlertsButton" Style="{StaticResource TextButton}" Content="Clear all"/>
                             </StackPanel>
                         </DockPanel>
                     </StackPanel>

@@ -90,7 +90,7 @@ public partial class IslandWindow
         SetBaseExpression("surprised");
         RenderAlerts();
         RenderCompact();
-        if (!Notif.Dnd && !_expanded && !_autoHiding && !Pill.IsMouseOver)
+        if (!Notif.Dnd && !CodeMode && !_expanded && !_autoHiding && !Pill.IsMouseOver) // locked in = quiet
         {
             _picked = null; // show Alerts
             SetExpanded(true);
@@ -128,7 +128,7 @@ public partial class IslandWindow
         _alertIndex = Math.Clamp(_alertIndex, 0, _feed.Items.Count - 1);
         SetIcon(AlertIcon, AlertIconBg, AlertLetter, n);
         AlertTitle.Text = n.Title;
-        AlertBody.Text = n.Body;
+        AlertBody.Text = Notif.ShowPreview ? n.Body : "Preview hidden";
         MuteAppButton.Content = "Mute " + n.App;
         AlertPos.Text = $"{_alertIndex + 1} / {_feed.Items.Count}";
         AlertPrev.IsEnabled = _alertIndex > 0;
@@ -139,7 +139,7 @@ public partial class IslandWindow
         {
             SetIcon(NotifIcon, NotifIconBg, NotifLetter, f);
             NotifLineTitle.Text = f.Title;
-            NotifLineBody.Text = "  " + f.Body.Replace('\n', ' ');
+            NotifLineBody.Text = !Notif.ShowPreview ? "" : "  " + f.Body.Replace('\n', ' ');
         }
     }
 
@@ -154,7 +154,8 @@ public partial class IslandWindow
     {
         icon.Background = n.Icon is { } img ? new ImageBrush(img) { Stretch = Stretch.Uniform } : null;
         letter.Text = n.Icon is null && n.App.Length > 0 ? n.App[..1].ToUpperInvariant() : "";
-        background.Background = n.Icon is not null ? Brushes.Transparent
-            : (Brush)new BrushConverter().ConvertFromString(AvatarColors[n.App.Sum(c => c) % AvatarColors.Length])!;
+        background.Background = n.Icon is not null ? Brushes.Transparent : new SolidColorBrush(AvatarColor(n.App));
     }
+
+    private static Color AvatarColor(string app) => (Color)ColorConverter.ConvertFromString(AvatarColors[app.Sum(c => c) % AvatarColors.Length]);
 }

@@ -91,6 +91,9 @@ public sealed class AppConfig
 {
     public const string DefaultMascot = "kiko";
     public static readonly string[] Mascots = ["kiko", "miso", "bun", "bolt", "ribbit"];
+    /// <summary>"none" hides the mascot; "custom" uses the user's own picture (copied to <see cref="CustomMascotPath"/>).</summary>
+    public const string NoMascot = "none", CustomMascot = "custom";
+    public static string CustomMascotPath => Path.Combine(ConfigService.DefaultDirectory, "custom-mascot");
 
     public int Version { get; set; } = 1;
     public WindowConfig Window { get; set; } = new();
@@ -120,7 +123,8 @@ public sealed class AppConfig
         w.Alignment = OneOf(w.Alignment, "Center", "Left", "Center", "Right", "Top", "Middle", "Bottom");
 
         Appearance.Theme = OneOf(Appearance.Theme, "dark", "dark", "light", "auto");
-        Appearance.Mascot = OneOf(Appearance.Mascot, DefaultMascot, Mascots);
+        Appearance.Mascot = OneOf(Appearance.Mascot, DefaultMascot, [.. Mascots, NoMascot, CustomMascot]);
+        if (Appearance.Mascot == CustomMascot && !File.Exists(CustomMascotPath)) Appearance.Mascot = DefaultMascot;
         Behavior.AutoCollapseSeconds = Math.Clamp(Behavior.AutoCollapseSeconds, 0, 600); // 0 = never
         Modules.Mail.PollSeconds = Math.Clamp(Modules.Mail.PollSeconds, 15, 3600);
         Modules.Shortcuts.Max = Math.Clamp(Modules.Shortcuts.Max, 1, 24);
@@ -170,6 +174,10 @@ public sealed class CodeConfig
 {
     public bool Enabled { get; set; }
     public int Port { get; set; } = 47811;
+    /// <summary>The user has OK'd editing ~/.claude/settings.json once; later toggles skip the explanation.</summary>
+    public bool Consented { get; set; }
+    /// <summary>Answer Claude Code permission prompts (Allow / Deny) from the island.</summary>
+    public bool Approvals { get; set; } = true;
 }
 
 /// <summary>No password here — credentials are DPAPI-encrypted in a separate local file (Phase 9).</summary>
@@ -189,6 +197,8 @@ public sealed class NotificationsConfig
     public bool Enabled { get; set; } = true;
     public List<string> Muted { get; set; } = [];
     public bool Dnd { get; set; }
+    /// <summary>Show message text on the island. Off by default: screens are visible to bystanders (sender only).</summary>
+    public bool ShowPreview { get; set; }
     /// <summary>"windows" = real toasts (UserNotificationListener); "mock" = fake ones for demos.</summary>
     public string Source { get; set; } = "windows";
 }

@@ -126,6 +126,9 @@
             <TextBlock Style="{StaticResource Section}" Text="Appearance"/>
             <Border Style="{StaticResource Card}"><StackPanel x:Name="AppearancePanel"/></Border>
 
+            <TextBlock Style="{StaticResource Section}" Text="Notifications"/>
+            <Border Style="{StaticResource Card}"><StackPanel x:Name="NotifyPanel"/></Border>
+
             <TextBlock Style="{StaticResource Section}" Text="Claude Code"/>
             <Border Style="{StaticResource Card}"><StackPanel x:Name="CodePanel"/></Border>
 

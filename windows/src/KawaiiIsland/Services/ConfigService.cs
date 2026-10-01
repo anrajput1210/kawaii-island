@@ -106,6 +106,7 @@ public sealed class AppConfig
         Modules.Code ??= new();
         Modules.Code.Port = Math.Clamp(Modules.Code.Port, 1024, 65535);
         Modules.Notifications.Muted ??= [];
+        Modules.Notifications.Source = OneOf(Modules.Notifications.Source, "windows", "windows", "mock");
         Modules.Shortcuts.Items ??= [];
 
         var w = Window;
@@ -188,6 +189,8 @@ public sealed class NotificationsConfig
     public bool Enabled { get; set; } = true;
     public List<string> Muted { get; set; } = [];
     public bool Dnd { get; set; }
+    /// <summary>"windows" = real toasts (UserNotificationListener); "mock" = fake ones for demos.</summary>
+    public string Source { get; set; } = "windows";
 }
 
 public sealed class MusicConfig

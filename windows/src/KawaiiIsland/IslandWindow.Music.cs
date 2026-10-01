@@ -11,20 +11,14 @@ namespace KawaiiIsland;
 
 /// <summary>
 /// Music module (spec §3.3). Compact: album art + title + equalizer while something plays. Expanded: art, title,
-/// progress (interpolated locally) and controls. Also owns which expanded view is shown
-/// (Home / Music / Code); tabs appear only when more than one module has something to show.
+/// progress (interpolated locally) and controls.
 /// </summary>
 public partial class IslandWindow
 {
-    private enum View { Home, Music, Code }
-
     private static readonly double[] EqPeriods = [0.42, 0.55, 0.37, 0.5, 0.46];
 
     private MediaService? _mediaService;
     private MediaSnapshot? _media;
-    private View _view = View.Home;
-    private View? _picked;   // tab the user chose; null = automatic
-    private bool _codeBusy;  // Code mode owns the compact pill while Claude is working (set by RenderCode)
     private bool? _eqPlaying;
     private Rectangle[] _eqBars = [];
 
@@ -39,8 +33,6 @@ public partial class IslandWindow
         PrevButton.Click += (_, _) => _mediaService?.Previous();
         PlayButton.Click += (_, _) => _mediaService?.PlayPause();
         NextButton.Click += (_, _) => _mediaService?.Next();
-        TabMusic.Click += (_, _) => { _picked = View.Music; RenderExpanded(); TickMusic(); };
-        TabCode.Click += (_, _) => { _picked = View.Code; RenderExpanded(); };
         ProgressTrack.SizeChanged += (_, _) => TickMusic();
         OnMediaChanged(null);
         if (MusicEnabled) StartMusic();
@@ -111,43 +103,6 @@ public partial class IslandWindow
         RemText.Text = timed ? "-" + MediaMath.Format(m.Duration - pos) : "";
         ProgressFill.Width = timed ? ProgressTrack.ActualWidth * (pos / m.Duration) : 0;
     }
-
-    // ---------------- which view is showing ----------------
-
-    /// <summary>Compact pill: Code mode while Claude works, else music while it plays, else mascot + clock.</summary>
-    private void RenderCompact()
-    {
-        bool music = !_codeBusy && _media is { Playing: true };
-        SetCompact(_codeBusy || music);
-        CodeLinePanel.Visibility = Vis(_codeBusy);
-        MusicLinePanel.Visibility = Eq.Visibility = Vis(music);
-        MascotSmall.Visibility = Clock.Visibility = Vis(!music);
-    }
-
-    private void RenderExpanded()
-    {
-        bool code = CodeMode, music = _media is not null;
-        _view = _picked switch
-        {
-            View.Code when code => View.Code,
-            View.Music when music => View.Music,
-            _ when code && _codeBusy => View.Code,
-            _ when music && _media!.Playing => View.Music,
-            _ => code ? View.Code : music ? View.Music : View.Home,
-        };
-        bool tabs = code && music;
-        TabRow.Visibility = Vis(tabs || _view == View.Music);
-        Tabs.Visibility = Vis(tabs);
-        TabMusic.IsChecked = _view == View.Music;
-        TabCode.IsChecked = _view == View.Code;
-        MascotTiny.Visibility = SmallClock.Visibility = Vis(_view == View.Music);
-        MainRow.Visibility = Vis(_view != View.Music);
-        ClockBlock.Visibility = Greeting.Visibility = Vis(_view == View.Home);
-        CodeHeader.Visibility = CodeMeters.Visibility = CodeFooter.Visibility = Vis(_view == View.Code);
-        MusicPanel.Visibility = Vis(_view == View.Music);
-    }
-
-    private static Visibility Vis(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
 
     /// <summary>Hover glow follows the album art while the music pill is showing.</summary>
     private Color GlowColor() => MusicLinePanel.Visibility == Visibility.Visible && _media?.Tint is { } t ? t : Accent();

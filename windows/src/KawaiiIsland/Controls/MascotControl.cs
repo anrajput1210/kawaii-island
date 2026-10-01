@@ -105,6 +105,9 @@ internal static class Motion
     public static bool Enabled => SystemParameters.ClientAreaAnimation;
     public static Duration Ms(int ms) => new(TimeSpan.FromMilliseconds(Enabled ? ms : 0));
     public static TimeSpan Delay(int ms) => TimeSpan.FromMilliseconds(Enabled ? ms : 0);
+
+    /// <summary>Apple-style ease-out: quick start, long soft settle, never overshoots (no bounce).</summary>
+    public static IEasingFunction Smooth => new QuarticEase { EasingMode = EasingMode.EaseOut };
 }
 
 /// <summary>Detects a burst of N clicks within a time window (3 clicks in 900 ms → dizzy).</summary>

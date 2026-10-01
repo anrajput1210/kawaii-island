@@ -48,7 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(timer)
         menu.addItem(.separator())
         menu.addItem(check("Expand on Hover", model.config.hoverToExpand, #selector(toggleHover)))
-        menu.addItem(NSMenuItem.sectionHeader(title: "Show"))
+        menu.addItem(withTitle: "Show", action: nil, keyEquivalent: "").isEnabled = false
         for (i, (title, key)) in Self.toggles.enumerated() {
             let item = check(title, model.config[keyPath: key], #selector(toggleSource(_:)))
             item.tag = i

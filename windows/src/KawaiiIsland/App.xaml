@@ -1,0 +1,18 @@
+<Application x:Class="KawaiiIsland.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Assets/Mascots.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <!-- Design tokens (design/README.md). Dark theme; light theme swaps these in Phase 11. -->
+            <SolidColorBrush x:Key="IslandBackground" Color="#000000"/>
+            <SolidColorBrush x:Key="IslandText" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="IslandMuted" Color="#8E8E93"/>
+            <SolidColorBrush x:Key="Accent" Color="#FF8FB1"/>
+            <FontFamily x:Key="IslandFont">Segoe UI Variable Text, Segoe UI</FontFamily>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "window": {
+    "monitorId": "",
+    "dockEdge": "Top",
+    "alignment": "Center",
+    "x": 0, "y": 0,
+    "collapsedWidth": 180, "collapsedHeight": 36,
+    "expandedWidth": 520, "expandedHeight": 180,
+    "cornerRadius": 28, "opacity": 1.0,
+    "locked": true,
+    "appBarEnabled": true,
+    "autoHideFullscreen": true,
+    "autoHideAlways": false
+  },
+  "appearance": { "theme": "dark", "accent": "#FF8FB1", "mascot": "kiko" },
+  "modules": {
+    "mail": { "enabled": true, "provider": "mock", "server": "imap.example.com", "port": 993, "ssl": true, "username": "you@example.com", "pollSeconds": 60 },
+    "notifications": { "enabled": true, "muted": [], "dnd": false },
+    "music": { "enabled": true },
+    "shortcuts": { "enabled": true, "max": 8, "items": [ { "label": "Notepad", "path": "C:\\Windows\\notepad.exe", "args": "" } ] }
+  },
+  "behavior": { "autoCollapseSeconds": 4, "startWithWindows": true }
+}

@@ -1,0 +1,31 @@
+# .NET / Visual Studio
+bin/
+obj/
+.vs/
+*.user
+*.suo
+TestResults/
+artifacts/
+
+# Signing material — never commit
+*.pfx
+*.p12
+*.snk
+*.cer
+*.mobileprovision
+
+# Runtime data (lives in %LOCALAPPDATA% / ~/Library, never in the repo)
+config.json
+config.bad.json
+logs/
+
+# macOS / Swift
+.DS_Store
+.build/
+.swiftpm/
+DerivedData/
+*.xcuserstate
+
+# Tooling
+node_modules/
+installer/out/

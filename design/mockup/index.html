@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kawaii Island — Mockup</title>
+<style>
+:root{
+  --spring:cubic-bezier(.34,1.45,.64,1); --dur:320ms;
+  --brand:#FF8FB1; --t-music:#BF7BFF; --t-mail:#4DA3FF; --t-chat:#7B6CF6; --t-call:#30D158; --danger:#FF453A;
+  font-family:"Segoe UI Variable Text","Segoe UI Variable","Segoe UI",system-ui,sans-serif;
+}
+:root[data-theme=dark]{--page:#0E0E12;--panel:#17171C;--island:#000;--text:#fff;--muted:#8E8E93;--btn:#2C2C2E;--line:#2A2A30;--track:#3A3A3C;--brandText:#FF8FB1;--st1:#2B2B4A;--st2:#5A3B6E;--win:#1C1C21;--chrome:#26262D;--ishadow:0 10px 28px rgba(0,0,0,.5)}
+:root[data-theme=light]{--page:#F5F2F7;--panel:#fff;--island:#fff;--text:#1C1C1E;--muted:#6E6E73;--btn:#EFEFF4;--line:#E5E1EA;--track:#E0DCE6;--brandText:#B8436F;--st1:#F7E3EC;--st2:#DCE4F7;--win:#fff;--chrome:#F1ECF3;--ishadow:0 0 0 1px rgba(0,0,0,.06),0 10px 26px rgba(0,0,0,.14)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-size:14px;transition:background .25s}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.muted{color:var(--muted)} .xs{font-size:10.5px} .sm{font-size:12px}
+header.top{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:16px;padding:10px 24px;background:color-mix(in srgb,var(--page) 85%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header.top .brand{display:flex;align-items:center;gap:10px;font-size:15px} header .grow{flex:1}
+main{max-width:1180px;margin:0 auto;padding:24px 24px 80px}
+section{margin:36px 0 56px} h2{font-size:22px;margin:0 0 4px;font-weight:600} section>p{margin:0 0 16px;color:var(--muted);line-height:1.5}
+kbd{font:inherit;font-size:12px;padding:1px 6px;border-radius:5px;background:var(--panel);border:1px solid var(--line);color:var(--text)}
+.seg{display:inline-flex;gap:2px;padding:2px;border-radius:9px;background:var(--panel);border:1px solid var(--line);flex-wrap:wrap}
+.seg button{padding:5px 12px;border-radius:7px;font-size:12px;color:var(--muted);font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.seg button.on{background:color-mix(in srgb,var(--brand) 20%,transparent);color:var(--brandText);font-weight:600}
+.skinpick button{padding:3px 10px 3px 4px}
+.skinpick.big button{padding:5px}
+.chipbtn{padding:7px 12px;border-radius:99px;background:var(--panel);border:1px solid var(--line);font-size:12px;font-weight:500}
+.chipbtn:hover{border-color:var(--brand)} .chipbtn:focus-visible,.seg button:focus-visible,.tg:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.demo-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+
+/* ---------- island ---------- */
+.island{position:relative;flex:none;background:var(--island);color:var(--text);overflow:hidden;box-shadow:var(--ishadow);opacity:var(--op,1);
+  transition:width var(--dur) var(--spring),height var(--dur) var(--spring),border-radius var(--dur) var(--spring),transform 150ms ease-out,box-shadow 150ms ease-out}
+.island .c{position:absolute;top:0;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:0 9px}
+.island.x .c{display:block;padding:12px 16px 14px}
+.island.live{cursor:pointer;user-select:none}
+.island.live:hover{transform:scale(1.04);box-shadow:var(--ishadow),0 0 22px color-mix(in srgb,var(--tint,var(--brand)) 45%,transparent)}
+.island.ring,.island.live.ring:hover{box-shadow:var(--ishadow),inset 0 0 0 1.5px var(--tint),0 0 20px color-mix(in srgb,var(--tint) 35%,transparent)}
+.grow{flex:1}
+.lead,.trail{display:flex;align-items:center;gap:8px;min-width:0}
+.lead .sm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
+.clock{font-weight:600;font-size:13px;font-variant-numeric:tabular-nums}
+.it{animation:in 180ms cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*60ms)}
+@keyframes in{from{opacity:0;transform:translateY(6px)}}
+.mascot{display:inline-block;flex:none} .mascot svg{width:100%;height:100%;display:block;overflow:visible;animation:bob 2.4s ease-in-out infinite}
+.island .mascot{cursor:pointer}
+@keyframes bob{50%{transform:translateY(-1px)}}
+.mascot.squish svg{animation:squish 380ms cubic-bezier(.3,1.6,.5,1)}
+@keyframes squish{30%{transform:scale(1.3,.7) translateY(3px)}65%{transform:scale(.92,1.1)}}
+.mascot.dizzy svg{animation:wobble .45s ease-in-out infinite}
+@keyframes wobble{25%{transform:rotate(-14deg)}75%{transform:rotate(14deg)}}
+.mascot.gulp svg{animation:gulp 450ms ease}
+@keyframes gulp{40%{transform:scale(1.25,.8)}70%{transform:scale(.9,1.1)}}
+.art{display:inline-grid;place-items:center;flex:none;color:#fff}
+.eq{display:inline-flex;align-items:flex-end;gap:2px;height:16px}
+.eq i{width:3px;border-radius:2px;background:var(--tint);height:40%}
+.playing .eq i{animation:eq .9s ease-in-out infinite alternate} .eq i:nth-child(2){animation-delay:-.3s}.eq i:nth-child(3){animation-delay:-.6s}.eq i:nth-child(4){animation-delay:-.15s}.eq i:nth-child(5){animation-delay:-.45s}
+@keyframes eq{0%{height:25%}100%{height:100%}}
+.badge{min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--tint);color:#fff;font-size:11px;font-weight:700;display:inline-grid;place-items:center}
+.dot-ic{width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;flex:none;color:var(--tint);background:color-mix(in srgb,var(--tint) 20%,transparent)}
+.app-ic{width:24px;height:24px;border-radius:7px;display:inline-grid;place-items:center;color:#fff;font-weight:700;font-size:11px;flex:none}
+.app-ic.lg{width:36px;height:36px;border-radius:10px;font-size:15px}
+.xwrap{display:flex;flex-direction:column;gap:10px;height:100%}
+.xhead{display:flex;align-items:center;gap:8px}
+.tabs{display:flex;gap:2px}
+.tabs button{padding:3px 9px;border-radius:99px;font-size:12px;font-weight:500;color:var(--muted)}
+.tabs button:hover{color:var(--text)}
+.tabs button.on{color:var(--text);background:var(--btn);font-weight:600}
+.xbody{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0}
+.row{display:flex;align-items:center} .g8{gap:8px}.g10{gap:10px}.g12{gap:12px}.g20{gap:20px}
+.meta{display:flex;flex-direction:column;min-width:0;line-height:1.3}
+.meta b{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta .muted{font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta b.lg{font-size:15px}
+.clamp2{white-space:normal!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.prog{flex:1;height:4px;max-height:4px;border-radius:2px;background:var(--track);overflow:hidden}
+.prog i{display:block;height:100%;background:var(--text);border-radius:2px;transition:width .5s linear}
+.t{font-size:10.5px;font-variant-numeric:tabular-nums;min-width:30px}
+.t:last-child{text-align:right}
+.glyph{display:inline-grid;place-items:center;color:var(--text);border-radius:50%;padding:4px}
+.glyph:hover{background:var(--btn)}
+.srcchip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;background:var(--btn);font-size:11px;font-weight:600;white-space:nowrap}
+.srcchip i{width:7px;height:7px;border-radius:50%;background:var(--t-music)}
+.ov{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;flex:1}
+.ov-music{display:flex;flex-direction:column;gap:12px;justify-content:center}
+.ov-side{display:flex;flex-direction:column;gap:12px;justify-content:center;border-left:1px solid var(--line);padding-left:16px}
+.mrow{display:flex;align-items:center;gap:10px;padding:2px 0}
+.av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;flex:none}
+.pill{flex:1;height:30px;border-radius:99px;background:var(--btn);font-size:12px;font-weight:600}
+.pill.tint{background:var(--tint);color:#fff}
+.apps{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;align-items:start;padding-top:6px}
+.tile{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:10.5px;color:var(--muted);border-radius:12px;padding:4px 0;min-width:0}
+.tile:hover{background:var(--btn)}
+.tile .ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px}
+.tile .ic.add{border:1.5px dashed var(--muted);color:var(--muted)}
+.tile span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bubble{width:40px;height:40px;border-radius:50%;background:var(--island);box-shadow:var(--ishadow);display:grid;place-items:center;position:relative;color:var(--t-mail);
+  transform:translateX(-24px) scale(.4);opacity:0;transition:transform var(--dur) var(--spring),opacity 200ms;pointer-events:none}
+.bubble.on{transform:none;opacity:1;pointer-events:auto}
+.bubble .badge{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;font-size:9.5px;padding:0 4px;--tint:var(--t-mail)}
+
+/* ---------- desktop scenes ---------- */
+.desk{position:relative;height:430px;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,var(--st1),var(--st2));border:1px solid var(--line)}
+.strip{position:absolute;left:0;right:0;top:0;height:var(--strip,48px);border-bottom:1.5px dashed var(--brand);background:color-mix(in srgb,var(--brand) 10%,transparent);transition:opacity .25s,height .25s}
+.strip span{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:600;color:var(--brandText)}
+.desk:not(.reserved) .strip{opacity:0}
+.browser{position:absolute;left:0;right:0;top:var(--strip,48px);bottom:40px;background:var(--win);transition:top .3s ease;overflow:hidden}
+.desk:not(.reserved) .browser{top:0}
+.tabstrip{height:36px;background:var(--chrome);display:flex;align-items:flex-end;gap:4px;padding:0 10px}
+.tabstrip .tab{height:29px;padding:7px 14px;border-radius:8px 8px 0 0;font-size:11.5px;color:var(--muted);width:170px;white-space:nowrap;overflow:hidden}
+.tabstrip .tab.on{background:var(--win);color:var(--text);font-weight:600}
+.addr{height:36px;display:flex;align-items:center;padding:0 90px;border-bottom:1px solid var(--line)}
+.addr span{flex:1;background:var(--chrome);border-radius:99px;padding:4px 14px;font-size:11px;color:var(--muted)}
+.pagelines{padding:22px 40px;display:flex;flex-direction:column;gap:14px}
+.pagelines i{display:block;height:10px;border-radius:5px;background:color-mix(in srgb,var(--muted) 18%,transparent)}
+.taskbar{position:absolute;left:0;right:0;bottom:0;height:40px;background:color-mix(in srgb,var(--win) 92%,transparent);display:flex;justify-content:center;align-items:center;gap:10px;border-top:1px solid var(--line)}
+.taskbar i{width:20px;height:20px;border-radius:5px}
+.island-wrap{position:absolute;top:6px;left:0;right:0;display:flex;justify-content:center;align-items:flex-start;gap:8px;z-index:5;pointer-events:none;padding:0 12px}
+.island-wrap>*{pointer-events:auto}
+.callout{position:absolute;z-index:6;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:600;background:var(--brand);color:#2B2B4A;white-space:nowrap}
+.callout.bad{background:var(--danger);color:#fff}
+.desk.reserved .when-off,.desk:not(.reserved) .when-on{display:none}
+.zone{position:absolute;background:color-mix(in srgb,var(--brand) 14%,transparent);opacity:0;transition:opacity .15s;pointer-events:none}
+.dragging .zone,.dragging .cline{opacity:1}
+.cline{position:absolute;top:0;bottom:40px;left:50%;width:0;border-left:1.5px dashed var(--brand);opacity:0;transition:opacity .15s}
+.floater{position:absolute;touch-action:none}
+.floater.snap{transition:left 200ms cubic-bezier(.2,.8,.2,1),top 200ms cubic-bezier(.2,.8,.2,1)}
+.floater.unlocked::after{content:"";position:absolute;inset:-5px;border-radius:24px;border:1.5px dashed var(--brand);pointer-events:none}
+.floater.unlocked .island{cursor:grab} .dragging .floater .island{cursor:grabbing}
+.video{background:radial-gradient(ellipse at 50% 60%,#3B2350,#0B0B12 70%);border:0}
+.video .play{position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.45);font-size:16px;font-weight:600}
+.video .bar{position:absolute;left:24px;right:24px;bottom:22px;height:4px;border-radius:2px;background:rgba(255,255,255,.2)}
+.video .bar i{display:block;width:40%;height:100%;background:var(--brand);border-radius:2px}
+.hstrip{position:absolute;left:0;right:0;top:0;height:3px;z-index:7;background:var(--brand);box-shadow:0 0 10px var(--brand);opacity:.85}
+.hstrip::before{content:"";position:absolute;left:0;right:0;top:0;height:14px}
+.hider{transition:transform 250ms cubic-bezier(.4,0,.2,1),opacity 250ms}
+.hider.hidden{transform:translateY(-130%);opacity:0}
+.peek{position:absolute;left:50%;top:-46px;z-index:8;display:flex;align-items:flex-start;gap:4px;transform:translateX(-50%);transition:top 340ms var(--spring);cursor:pointer}
+.peek.on{top:-14px}
+.peek .say{margin-top:24px;background:#fff;color:#2B2B4A;font-size:12px;font-weight:700;padding:4px 10px;border-radius:12px 12px 12px 4px;white-space:nowrap;opacity:0;transform:scale(.5);transform-origin:left top;transition:opacity .2s .18s,transform .3s .18s var(--spring)}
+.peek.on .say{opacity:1;transform:none}
+
+/* ---------- gallery ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(540px,1fr));gap:18px}
+.card .lbl{font-size:13px;font-weight:600;margin-bottom:6px} .card .lbl span{font-weight:400;color:var(--muted);margin-left:6px}
+.stage{border-radius:14px;background:linear-gradient(135deg,var(--st1),var(--st2));display:flex;justify-content:center;align-items:flex-start;gap:8px;padding:10px 12px 14px;border:1px solid var(--line)}
+
+/* ---------- menu & settings ---------- */
+.menu{position:fixed;z-index:100;width:250px;padding:6px;border-radius:12px;background:var(--win);border:1px solid var(--line);box-shadow:0 14px 36px rgba(0,0,0,.35);display:none}
+.menu.static{position:relative;z-index:auto;display:block;box-shadow:var(--ishadow)}
+.menu .mi{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border-radius:8px;font-size:12.5px;text-align:left}
+.menu .mi:hover,.menu .mi:focus-visible{background:color-mix(in srgb,var(--brand) 14%,transparent);outline:none}
+.menu .mi .r{margin-left:auto;color:var(--muted);font-size:11.5px}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 2px}
+.tg{width:34px;height:20px;border-radius:10px;background:var(--track);position:relative;flex:none;transition:background .15s;display:inline-block}
+.tg::after{content:"";position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .15s}
+.tg.on{background:var(--brand)} .tg.on::after{left:17px}
+.menu .tg{transform:scale(.85)}
+.settings-row{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap}
+.win{width:840px;max-width:100%;border-radius:12px;background:var(--win);border:1px solid var(--line);box-shadow:var(--ishadow);overflow:hidden}
+.win .tb{display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:12px;font-weight:600;border-bottom:1px solid var(--line)}
+.win .body{display:grid;grid-template-columns:180px 1fr}
+.win nav{background:var(--panel);padding:12px 10px;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--line)}
+.win nav button{text-align:left;padding:7px 10px;border-radius:8px;font-size:12.5px;font-weight:500}
+.win nav button.on{background:color-mix(in srgb,var(--brand) 18%,transparent);color:var(--brandText);font-weight:600}
+.win .main{padding:20px 24px;display:flex;flex-direction:column;gap:18px}
+.win h3{margin:0;font-size:18px;font-weight:600}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.grp{display:flex;flex-direction:column;gap:8px} .grp>b{font-size:12.5px}
+.srow{display:grid;grid-template-columns:52px 1fr 54px;gap:10px;align-items:center;font-size:12px;color:var(--muted)}
+.srow output{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:4px 0;text-align:center;color:var(--text);font-size:12px;font-variant-numeric:tabular-nums}
+input[type=range]{accent-color:var(--brand);width:100%}
+.trow{display:flex;gap:10px;align-items:flex-start}.trow div{flex:1;display:flex;flex-direction:column;gap:2px;font-size:12.5px;font-weight:600}.trow small{font-weight:400;color:var(--muted);font-size:11.5px}
+.sel{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--text);width:100%}
+.appear{display:flex;gap:28px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px}
+.sw{width:22px;height:22px;border-radius:50%;border:2px solid transparent}
+.sw.on{border-color:var(--text)}
+/* mascot sheet */
+.sheet{display:grid;grid-template-columns:100px repeat(8,1fr);gap:8px;align-items:center}
+.sheet .skinlbl{display:flex;flex-direction:column;font-size:13px} .sheet .skinlbl small{color:var(--muted);font-weight:400}
+.sheet .cell{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-weight:600}
+.no-anim *,.no-anim *::before,.no-anim *::after{transition:none!important;animation:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:640px){main{padding:16px}.grid{grid-template-columns:1fr}.cols{grid-template-columns:1fr}.win .body{grid-template-columns:1fr}.win nav{display:none}.sheet{grid-template-columns:repeat(4,1fr)}.sheet .skinlbl{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span id="logo"></span><b>Kawaii Island</b><span class="muted sm">Phase 0A · interactive mockup</span></div>
+  <div class="grow"></div>
+  <div class="seg" data-bind="theme"><button data-v="dark" class="on">Dark</button><button data-v="light">Light</button></div>
+  <div class="seg skinpick" data-bind="skin" aria-label="Mascot"></div>
+</header>
+<main>
+
+<section>
+  <h2>01 · Live island, docked as an AppBar</h2>
+  <p>Click the island to expand it, right-click it for the menu, or press <kbd>Ctrl+Alt+I</kbd>. It collapses 4 s after the pointer leaves.<br>
+     The mascot reacts to you. Hover it and its eyes grow. Click it and it squishes and gets annoyed. Click it three times fast and it gets dizzy.<br>
+     <b>Drag any file from your desktop onto the island.</b> It turns into a box, swallows the file, and adds it to Apps.</p>
+  <div class="demo-bar">
+    <button class="chipbtn" data-demo="idle">Idle</button>
+    <button class="chipbtn" data-demo="music">▶ Play music</button>
+    <button class="chipbtn" data-demo="mail">✉ New mail</button>
+    <button class="chipbtn" data-demo="notif">🔔 Notification</button>
+    <button class="chipbtn" data-demo="split">Two activities (split)</button>
+    <span class="grow"></span>
+    <label class="sm muted"><input type="checkbox" id="noAnim"> Simulate “Animation effects: off”</label>
+  </div>
+  <div class="demo-bar"><span class="sm muted">Now playing from</span><div class="seg" data-bind="src" id="srcSeg"></div>
+    <span class="xs muted">Any app that reports to Windows media controls works, with no login: Spotify, Apple Music, browser tabs, VLC…</span></div>
+  <div class="desk reserved" id="liveDesk">
+    <div class="strip"><span>Reserved work area (ABM_SETPOS) · click-through outside the pill</span></div>
+    <div class="browser"></div>
+    <div class="island-wrap" id="liveWrap"><div class="island live" id="live" tabindex="0" role="button" aria-label="Kawaii Island"></div><div class="bubble" id="bubble" title="Mail — 3 unread"></div></div>
+    <div class="taskbar"></div>
+    <div class="callout when-on" style="right:14px;top:calc(var(--strip,48px) + 44px)">↑ tabs start below the strip, never covered</div>
+    <div class="callout bad when-off" style="right:14px;top:48px">✕ AppBar off: island floats over the tabs</div>
+  </div>
+  <div class="demo-bar" style="margin-top:10px"><span class="sm">Reserve workspace (AppBar)</span><button class="tg on" data-toggle="appbar" role="switch" aria-checked="true" aria-label="Reserve workspace"></button></div>
+</section>
+
+<section>
+  <h2>02 · States</h2>
+  <p>Compact states put content on the left and status on the right. Each activity has its own color; music takes its color from the album art. Expanded panels are flat on the island background.</p>
+  <div class="grid" id="gallery"></div>
+</section>
+
+<section>
+  <h2>05 · Unlocked: drag and snap</h2>
+  <p>Drag the island. If you release it within 24 px of an edge or the center line, it snaps there with a 200 ms ease. A dashed outline shows while it's unlocked.</p>
+  <div class="demo-bar"><span class="sm">Unlock to drag</span><button class="tg" data-toggle="unlocked" role="switch" aria-checked="false" aria-label="Unlock to drag"></button></div>
+  <div class="desk" id="dragDesk">
+    <div class="zone" style="left:0;right:0;top:0;height:24px"></div><div class="zone" style="left:0;top:0;bottom:40px;width:24px"></div>
+    <div class="zone" style="right:0;top:0;bottom:40px;width:24px"></div><div class="zone" style="left:0;right:0;bottom:40px;height:24px"></div>
+    <div class="cline"></div>
+    <div class="floater" id="floater"></div>
+    <div class="taskbar"></div>
+  </div>
+</section>
+
+<section>
+  <h2>07 · Auto-hide: peek and say hi</h2>
+  <p>When a fullscreen app is detected, the island slides off the top edge in 250 ms and releases the reserved strip. <b>Hover the glowing top edge:</b> the mascot peeks out and says hi 👋. <b>Click it</b> and the island opens. It hides again 800 ms after the pointer leaves.</p>
+  <div class="desk video" id="hideDesk">
+    <div class="play">▶ Fullscreen video</div><div class="bar"><i></i></div>
+    <div class="hstrip" id="hstrip" title="Hover me"></div>
+    <div class="peek" id="peek" role="button" aria-label="Open the island"></div>
+    <div class="island-wrap"><div class="hider hidden" id="hider"></div></div>
+  </div>
+</section>
+
+<section id="settings">
+  <h2>06 · Right-click menu and Settings</h2>
+  <p>These controls are wired to the live island above, and changes apply right away.</p>
+  <div class="settings-row">
+    <div><div class="card"><div class="lbl">06a · Right-click menu</div></div><div id="menuStatic"></div></div>
+    <div class="win" role="dialog" aria-label="Settings">
+      <div class="tb"><span id="winMascot"></span>Kawaii Island · Settings<span class="grow"></span><span class="muted">—&nbsp;&nbsp;&nbsp;✕</span></div>
+      <div class="body">
+        <nav><button class="on">Layout &amp; dock</button><button>Appearance</button><button>Mail</button><button>Notifications</button><button>Music</button><button>Shortcuts</button><button>Behavior</button><button>About</button></nav>
+        <div class="main">
+          <div><h3>Layout &amp; dock</h3><span class="muted sm">Size, position and workspace reservation.</span></div>
+          <div class="cols">
+            <div class="grp" style="gap:16px">
+              <div class="grp"><b>Collapsed size</b>
+                <label class="srow">Width<input type="range" min="140" max="260" data-num="cw"><output></output></label>
+                <label class="srow">Height<input type="range" min="28" max="48" data-num="ch"><output></output></label></div>
+              <div class="grp"><b>Expanded size</b>
+                <label class="srow">Width<input type="range" min="440" max="640" data-num="ew"><output></output></label>
+                <label class="srow">Height<input type="range" min="160" max="240" data-num="eh"><output></output></label></div>
+              <div class="grp"><b>Shape</b>
+                <label class="srow">Radius<input type="range" min="12" max="44" data-num="radius"><output></output></label>
+                <label class="srow">Opacity<input type="range" min="40" max="100" data-num="opacity"><output></output></label></div>
+            </div>
+            <div class="grp" style="gap:14px">
+              <div class="grp"><b>Dock edge</b><div class="seg" data-bind="edge"><button data-v="top" class="on">Top</button><button data-v="bottom">Bottom</button><button data-v="left">Left</button><button data-v="right">Right</button></div></div>
+              <div class="grp"><b>Alignment</b><div class="seg" data-bind="align"><button data-v="flex-start">Left</button><button data-v="center" class="on">Center</button><button data-v="flex-end">Right</button></div></div>
+              <div class="grp"><b>Monitor</b><select class="sel" aria-label="Monitor"><option>Display 1 — 2560×1440 (primary)</option><option>Display 2 — 1920×1080</option></select></div>
+              <div class="trow"><div>Reserve workspace (AppBar)<small>Windows stop below the island.</small></div><button class="tg on" data-toggle="appbar" role="switch" aria-checked="true" aria-label="Reserve workspace"></button></div>
+              <div class="trow"><div>Unlock to drag<small>Snaps within 24 px of edges.</small></div><button class="tg" data-toggle="unlocked" role="switch" aria-checked="false" aria-label="Unlock to drag"></button></div>
+              <div class="trow"><div>Auto-hide in fullscreen<small>Mascot peeks from the edge on hover.</small></div><button class="tg on" data-toggle="autohideFs" role="switch" aria-checked="true" aria-label="Auto-hide in fullscreen"></button></div>
+              <div class="trow"><div>Auto-hide always</div><button class="tg" data-toggle="autohideAlways" role="switch" aria-checked="false" aria-label="Auto-hide always"></button></div>
+            </div>
+          </div>
+          <div class="appear">
+            <div class="grp"><b>Theme</b><div class="seg" data-bind="theme"><button data-v="dark" class="on">Dark</button><button data-v="light">Light</button><button data-v="auto">Auto</button></div></div>
+            <div class="grp"><b>Brand accent</b><div class="row g8" id="swatches"></div></div>
+            <div class="grp"><b>Mascot</b><div class="seg skinpick big" data-bind="skin" aria-label="Mascot"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>08 · Mascot sheet</h2>
+  <p>Five original characters, and only one of them is anime. They share the same eyes and mouth, so every reaction works for each one. The extra expressions are wow (hover), annoyed (click) and dizzy (three fast clicks). When you drop a file, the mascot turns into a box.</p>
+  <div class="sheet" id="sheet"></div>
+</section>
+</main>
+<div class="menu" id="menu" role="menu"></div>
+
+<script src="../mascot/mascot.js"></script>
+<script>
+const face = Mascot.face, SKIN_KEYS = Object.keys(Mascot.SKINS);
+
+/* ---------- icons ---------- */
+const P = {
+  play:'<path d="M8 5v14l11-7z"/>', pause:'<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/>',
+  prev:'<path d="M6 6h2v12H6zM20 6v12L9 12z"/>', next:'<path d="M16 6h2v12h-2zM4 6v12l11-6z"/>',
+  mail:'<rect x="3" y="5.5" width="18" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 7.5l8 5.5 8-5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+  note:'<path d="M9 18V6l10-2v12" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="7" cy="18" r="2.5"/><circle cx="17" cy="16" r="2.5"/>',
+  plus:'<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+  speaker:'<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+};
+const ic = (n, s=16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${P[n]}</svg>`;
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* ---------- state ---------- */
+const S = { theme:'dark', skin:'kiko', playing:true, pos:84, src:0, base:'collapsed', mode:'collapsed', tab:'overview', split:false,
+  appbar:true, unlocked:false, autohideFs:true, autohideAlways:false, dnd:false, edge:'top', align:'center',
+  cw:180, ch:36, ew:520, eh:180, radius:28, opacity:100, accent:'#FF8FB1' };
+// Media sessions as SMTC reports them (GlobalSystemMediaTransportControlsSessionManager.GetSessions()).
+const SOURCES = [
+  { app:'Spotify', title:'Midnight Bloom', artist:'Luna Kei', album:'Soft Static', art:['#FF8FB1','#7B6CF6'], tint:'#BF7BFF', dur:218 },
+  { app:'Apple Music', title:'Paper Planes', artist:'June Arcade', album:'Night Drive', art:['#FFB340','#FF453A'], tint:'#FF7A45', dur:196 },
+  { app:'Edge · YouTube', title:'lofi beats to code to', artist:'Cozy Room Radio', album:'Live', art:['#3CC5A0','#3C8CE7'], tint:'#3CC5A0', dur:5400 },
+];
+const T = () => SOURCES[S.src];
+const MAILS = [['H','#FF8FB1','Hana Park','Lunch on Friday?','2m'],['R','#7B6CF6','Ren Ito','Re: project timeline','18m'],['S','#30D158','Studio Weekly','Your digest is ready','1h']];
+const APPS = [['N','#3C8CE7','Notepad'],['>_','#3A3A4A','Terminal'],['W','#30D158','Browser'],['F','#FF9F0A','Files'],['</>','#7B6CF6','Code'],['P','#FF8FB1','Paint']];
+const MAX_APPS = 7; // + the Add tile = 8 (spec default)
+const TABS = [['overview','Overview'],['music','Music'],['mail','Mail · 3'],['alerts','Alerts'],['apps','Apps']];
+const TINT = { collapsed:'var(--brand)', music:'var(--t-music)', mail:'var(--t-mail)', notif:'var(--t-chat)', overview:'var(--brand)', alerts:'var(--t-chat)', apps:'var(--brand)' };
+const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+
+const mascot = (ex, size) => `<span class="mascot" data-ex="${ex}" style="width:${size}px;height:${size}px">${face(S.skin, ex)}</span>`;
+const art = s => `<span class="art" style="width:${s}px;height:${s}px;border-radius:${Math.round(s/4.5)}px;background:linear-gradient(135deg,${T().art[0]},${T().art[1]})">${ic('note', Math.round(s*.5))}</span>`;
+const eq = () => `<span class="eq">${'<i></i>'.repeat(5)}</span>`;
+const progress = () => `<div class="prog"><i data-prog style="width:${S.pos/T().dur*100}%"></i></div>`;
+const ctrls = big => { const s = big ? 26 : 16; return `<span class="row ${big?'g20':'g8'}"><button class="glyph" aria-label="Previous" title="Previous" data-act="prev">${ic('prev',s)}</button><button class="glyph" aria-label="Play/pause" title="Play/pause" data-act="play">${ic(S.playing?'pause':'play',s+(big?6:2))}</button><button class="glyph" aria-label="Next" title="Next" data-act="next">${ic('next',s)}</button></span>`; };
+const srcChip = () => `<button class="srcchip" data-act="src" title="Switch media session">${'<i></i>'}${T().app} ⇄</button>`;
+const exprFor = (mode, tab) => mode==='notif' ? 'surprised' : S.playing && (mode==='music' || tab==='music') ? 'happy' : 'idle';
+
+const BODY = {
+  overview: () => `<div class="ov it"><div class="ov-music">
+      <div class="row g10">${art(44)}<div class="meta"><b>${T().title}</b><span class="muted">${T().artist} · ${T().app}</span></div><span class="grow"></span>${ctrls(false)}</div>${progress()}</div>
+    <div class="ov-side">
+      <div class="row g10" style="--tint:var(--t-mail)"><span class="dot-ic">${ic('mail',13)}</span><div class="meta"><b>3 unread</b><span class="muted">Hana: Lunch on Friday?</span></div></div>
+      <div class="row g10"><span class="app-ic" style="background:#7B6CF6">C</span><div class="meta"><b>@mika</b><span class="muted">are you on tonight?</span></div></div>
+    </div></div>`,
+  music: () => `<div class="row g12 it">${art(46)}<div class="meta"><b class="lg">${T().title}</b><span class="muted">${T().artist} — ${T().album}</span></div><span class="grow"></span><span style="--tint:var(--t-music)">${eq()}</span></div>
+    <div class="row g8 it"><span class="t muted" data-pos>${fmt(S.pos)}</span>${progress()}<span class="t muted" data-rem>-${fmt(T().dur-S.pos)}</span></div>
+    <div class="row it"><span style="width:120px">${srcChip()}</span><span class="grow"></span>${ctrls(true)}<span class="grow"></span><span class="muted" style="width:120px;text-align:right">${ic('speaker',16)}</span></div>`,
+  mail: () => MAILS.map(([l,c,from,subj,t]) => `<div class="mrow it"><span class="av" style="background:${c}">${l}</span><div class="meta"><b>${from}</b><span class="muted">${subj}</span></div><span class="grow"></span><span class="xs muted">${t}</span></div>`).join(''),
+  alerts: () => `<div class="row g10 it" style="align-items:flex-start"><span class="app-ic lg" style="background:#7B6CF6">C</span><div class="meta"><span class="xs muted">Chat · now</span><b>@mika</b><span class="muted clamp2">are you on tonight? we’re doing the raid at 9, bring snacks</span></div></div>
+    <div class="row g8 it"><button class="pill tint">Reply</button><button class="pill">Mute Chat</button></div>`,
+  apps: () => `<div class="apps">${APPS.map(([l,c,n]) => `<button class="tile it" title="${esc(n)}"><span class="ic" style="background:${c};font-size:${l.length>1?12:15}px">${esc(l)}</span><span>${esc(n)}</span></button>`).join('')}<button class="tile it" title="Add app (or drop a file on the island)"><span class="ic add">${ic('plus',18)}</span><span>Add</span></button></div>`,
+};
+
+let drop = null; // null | 'open' | { msg } — file-drag state of the live island
+function view(mode, tab, exOverride) {
+  const ex = exOverride || exprFor(mode, tab);
+  const compact = { w:280, h:40, r:20, tint:TINT[mode] };
+  if (mode === 'expanded') return { w:S.ew, h:S.eh, r:S.radius, x:true, tint:TINT[tab],
+    html:`<div class="xwrap"><div class="xhead it"><nav class="tabs">${TABS.map(([k,l]) => `<button data-tab="${k}" class="${k===tab?'on':''}">${l}</button>`).join('')}</nav><span class="grow"></span><span class="clock muted" style="font-size:12px">9:41</span>${mascot(ex,22)}</div><div class="xbody">${BODY[tab]()}</div></div>` };
+  if (mode === 'dropopen') return { ...compact, tint:'#E8B98A', ring:true, html:`<div class="lead it"><span class="mascot" style="width:30px;height:30px">${Mascot.box(true)}</span><span class="sm"><b>Feed me!</b> <span class="muted">Drop to add to Apps</span></span></div>` };
+  if (mode === 'dropdone') return { ...compact, tint:'var(--t-call)', ring:true, html:`<div class="lead it"><span class="mascot gulp" style="width:30px;height:30px">${Mascot.box(false)}</span><span class="sm">${drop.msg}</span></div>` };
+  if (mode === 'music') return { ...compact, html:`<div class="lead it">${art(26)}<span class="sm">${T().title}</span></div><span class="grow"></span><div class="trail it">${eq()}</div>` };
+  if (mode === 'mail') return { ...compact, html:`<div class="lead it"><span class="dot-ic">${ic('mail',13)}</span><span class="sm">New mail · Hana Park</span></div><span class="grow"></span><div class="trail it"><span class="badge">3</span></div>` };
+  if (mode === 'notif') return { ...compact, ring:true, html:`<div class="lead it"><span class="app-ic" style="background:#7B6CF6">C</span><span class="sm"><b>@mika</b> <span class="muted">are you on?</span></span></div><span class="grow"></span><div class="trail it">${mascot(ex,24)}</div>` };
+  return { w:S.cw, h:S.ch, r:S.ch/2, tint:TINT.collapsed, html:`<div class="lead it">${mascot(ex, Math.round(S.ch*.72))}</div><span class="grow"></span><div class="trail it"><span class="clock">9:41</span></div>` };
+}
+
+function paint(el, v, stagger=true) {
+  el.style.width = v.w+'px'; el.style.height = v.h+'px'; el.style.borderRadius = v.r+'px';
+  el.style.setProperty('--tint', v.tint); el.style.setProperty('--op', S.opacity/100);
+  el.classList.toggle('x', !!v.x); el.classList.toggle('ring', !!v.ring); el.classList.toggle('playing', S.playing);
+  el.innerHTML = `<div class="c" style="width:${v.w}px;height:${v.h}px">${v.html}</div>`;
+  el.querySelectorAll('.it').forEach((n,i) => n.style.setProperty('--i', stagger ? i : 0));
+}
+const staticIsland = (mode, tab) => { const d = document.createElement('div'); d.className = 'island'; d.style.transition = 'none'; paint(d, view(mode, tab), false); return d; };
+
+/* ---------- live island ---------- */
+const live = document.getElementById('live'), bubble = document.getElementById('bubble');
+let liveKey = '', collapseTimer, notifTimer, hovering = false, mood = null, moodTimer, clicks = [];
+function renderLive(force) {
+  const mode = drop ? (drop === 'open' ? 'dropopen' : 'dropdone') : S.mode;
+  const key = [mode,S.tab,S.playing,S.skin,S.src,S.cw,S.ch,S.ew,S.eh,S.radius].join();
+  if (force || key !== liveKey) paint(live, view(mode, S.tab, mood)); else live.style.setProperty('--op', S.opacity/100);
+  liveKey = key;
+  live.setAttribute('aria-expanded', S.mode === 'expanded');
+  bubble.innerHTML = `${ic('mail',16)}<span class="badge">3</span>`;
+  bubble.classList.toggle('on', S.split && S.mode !== 'expanded' && !drop);
+  const desk = document.getElementById('liveDesk');
+  desk.classList.toggle('reserved', S.appbar);
+  desk.style.setProperty('--strip', (S.ch + 12)+'px'); // collapsed height + 6px gap above and below, never the expanded height
+  document.getElementById('liveWrap').style.justifyContent = S.align;
+}
+const setMode = (m, tab) => { S.mode = m; if (tab) S.tab = tab; renderLive(); };
+const expand = tab => { setMode('expanded', tab || S.tab); armCollapse(); };
+const collapse = () => setMode(S.base);
+function armCollapse() { clearTimeout(collapseTimer); if (!hovering && S.mode === 'expanded') collapseTimer = setTimeout(collapse, 4000); }
+
+// Mascot moods: swap only the face (no island repaint) so reactions feel instant.
+function setLiveMascot(ex, anim) {
+  document.querySelectorAll('#live .mascot[data-ex]').forEach(m => {
+    m.dataset.ex = ex; m.innerHTML = face(S.skin, ex); m.classList.remove('squish','dizzy');
+    if (anim) { void m.offsetWidth; m.classList.add(anim); }
+  });
+}
+const restMood = () => { mood = hovering ? 'wow' : null; setLiveMascot(mood || exprFor(S.mode, S.tab)); };
+function onMascotClick() {
+  const now = Date.now(); clicks = clicks.filter(t => now - t < 900); clicks.push(now);
+  clearTimeout(moodTimer);
+  if (clicks.length >= 3) { clicks = []; mood = 'dizzy'; setLiveMascot('dizzy', 'dizzy'); moodTimer = setTimeout(restMood, 3000); }
+  else { mood = 'annoyed'; setLiveMascot('annoyed', 'squish'); moodTimer = setTimeout(restMood, 1200); }
+}
+live.addEventListener('mouseenter', () => {
+  hovering = true; clearTimeout(collapseTimer);
+  if (mood) return; // don't interrupt annoyed/dizzy
+  setLiveMascot('blink'); setTimeout(() => { if (hovering && !mood) { mood = 'wow'; setLiveMascot('wow'); } }, 140);
+});
+live.addEventListener('mouseleave', () => { hovering = false; armCollapse(); if (mood === 'wow') { mood = null; setLiveMascot(exprFor(S.mode, S.tab)); } });
+live.addEventListener('click', e => {
+  if (drop) return;
+  if (e.target.closest('.mascot[data-ex]')) { onMascotClick(); return; }
+  const t = e.target.closest('[data-tab]'), a = e.target.closest('[data-act]');
+  if (t) { S.tab = t.dataset.tab; renderLive(); return; }
+  if (a) {
+    const act = a.dataset.act;
+    if (act === 'play') S.playing = !S.playing; else if (act === 'src') return setSource((S.src + 1) % SOURCES.length); else S.pos = act === 'prev' ? 0 : 10;
+    renderLive(true); return;
+  }
+  if (e.target.closest('button')) return;
+  S.mode === 'expanded' ? collapse() : expand(S.base === 'mail' ? 'mail' : S.base === 'music' ? 'music' : S.tab);
+});
+live.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target === live) { e.preventDefault(); live.click(); } });
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'i') { S.mode === 'expanded' ? collapse() : expand(); }
+  if (e.key === 'Escape') closeMenu();
+});
+
+/* ---------- file drop: mascot becomes a box and swallows it ---------- */
+let dragDepth = 0;
+['dragover','drop'].forEach(t => window.addEventListener(t, e => e.preventDefault())); // never let the page navigate to a dropped file
+live.addEventListener('dragenter', () => { dragDepth++; if (drop !== 'open') { drop = 'open'; renderLive(); } });
+live.addEventListener('dragleave', () => { if (--dragDepth > 0) return; dragDepth = 0; if (drop === 'open') { drop = null; renderLive(); } });
+live.addEventListener('drop', e => {
+  e.preventDefault(); dragDepth = 0;
+  const f = e.dataTransfer.files[0];
+  const raw = f ? f.name : (e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain') || 'item');
+  const name = raw.split(/[\\/]/).filter(Boolean).pop().replace(/\.(exe|lnk|url)$/i, '').slice(0, 24);
+  drop = { msg: addApp(name) }; renderLive();
+  setTimeout(() => { drop = null; renderLive(); }, 1900);
+});
+function addApp(name) {
+  if (APPS.some(a => a[2].toLowerCase() === name.toLowerCase())) return `<b>Already there!</b> <span class="muted">${esc(name)} is in Apps</span>`;
+  if (APPS.length >= MAX_APPS) return `<b>Too full!</b> <span class="muted">Apps holds 8. Remove one first</span>`;
+  APPS.push([name[0].toUpperCase(), ['#3C8CE7','#30D158','#FF9F0A','#7B6CF6','#FF8FB1'][APPS.length % 5], name]);
+  renderGallery();
+  return `<b>Nom!</b> <span class="muted">Added ${esc(name)} to Apps</span>`;
+}
+
+/* ---------- music sources ---------- */
+function setSource(i) {
+  S.src = i; S.pos = Math.round(T().dur * .3);
+  document.documentElement.style.setProperty('--t-music', T().tint); // dominant colour of the album art
+  document.querySelectorAll('#srcSeg button').forEach(b => b.classList.toggle('on', +b.dataset.v === i));
+  renderLive(true); renderGallery();
+}
+document.getElementById('srcSeg').innerHTML = SOURCES.map((s, i) => `<button data-v="${i}"><i style="width:8px;height:8px;border-radius:50%;background:${s.tint}"></i>${s.app}</button>`).join('');
+setInterval(() => { // local progress interpolation between SMTC timeline events
+  if (!S.playing) return; S.pos = (S.pos + .5) % T().dur;
+  document.querySelectorAll('#live [data-prog]').forEach(n => n.style.width = S.pos/T().dur*100+'%');
+  document.querySelectorAll('#live [data-pos]').forEach(n => n.textContent = fmt(S.pos));
+  document.querySelectorAll('#live [data-rem]').forEach(n => n.textContent = '-'+fmt(T().dur-S.pos));
+}, 500);
+
+document.querySelectorAll('[data-demo]').forEach(b => b.addEventListener('click', () => {
+  clearTimeout(notifTimer); const d = b.dataset.demo;
+  if (d === 'idle') { S.base = 'collapsed'; S.split = false; S.playing = false; }
+  if (d === 'music') { S.base = 'music'; S.split = false; S.playing = true; }
+  if (d === 'mail') { S.base = 'mail'; S.split = false; }
+  if (d === 'split') { S.base = 'music'; S.split = true; S.playing = true; }
+  if (d === 'notif') {
+    setMode('notif');
+    if (!S.dnd) notifTimer = setTimeout(() => { expand('alerts'); notifTimer = setTimeout(() => { if (!hovering) collapse(); }, 3000); }, 900);
+    else notifTimer = setTimeout(collapse, 3000);
+    return;
+  }
+  setMode(S.base);
+}));
+document.getElementById('noAnim').addEventListener('change', e => document.body.classList.toggle('no-anim', e.target.checked));
+
+/* ---------- blink loop (every idle mascot on the page) ---------- */
+(function blink() {
+  setTimeout(() => {
+    document.querySelectorAll('.mascot[data-ex="idle"]').forEach(m => { const html = m.innerHTML; m.innerHTML = face(m.dataset.skin || S.skin, 'blink'); setTimeout(() => { if (m.dataset.ex === 'idle') m.innerHTML = html; }, 120); });
+    blink();
+  }, 4000 + Math.random()*3000);
+})();
+
+/* ---------- context menu ---------- */
+const menu = document.getElementById('menu');
+const menuHTML = () => `
+  <button class="mi" data-m="expand">${S.mode==='expanded'?'Collapse':'Expand'} island<span class="r">Ctrl+Alt+I</span></button><hr>
+  <button class="mi" data-m="appbar">Reserve workspace (AppBar)<span class="r"><span class="tg ${S.appbar?'on':''}"></span></span></button>
+  <button class="mi" data-m="unlocked">Unlock to drag<span class="r"><span class="tg ${S.unlocked?'on':''}"></span></span></button>
+  <button class="mi" data-m="autohideFs">Auto-hide in fullscreen<span class="r"><span class="tg ${S.autohideFs?'on':''}"></span></span></button>
+  <button class="mi" data-m="autohideAlways">Auto-hide always<span class="r"><span class="tg ${S.autohideAlways?'on':''}"></span></span></button><hr>
+  <button class="mi">Edge<span class="r">${S.edge[0].toUpperCase()+S.edge.slice(1)} ›</span></button>
+  <button class="mi">Alignment<span class="r">${{'flex-start':'Left',center:'Center','flex-end':'Right'}[S.align]} ›</span></button>
+  <button class="mi">Mascot<span class="r">${Mascot.SKINS[S.skin].name} ›</span></button><hr>
+  <button class="mi" data-m="dnd">Do not disturb<span class="r"><span class="tg ${S.dnd?'on':''}"></span></span></button>
+  <button class="mi" data-m="settings">Settings…</button><button class="mi">Quit</button>`;
+function openMenu(x, y) { menu.innerHTML = menuHTML(); menu.style.display = 'block'; menu.style.left = Math.min(x, innerWidth-260)+'px'; menu.style.top = Math.min(y, innerHeight-menu.offsetHeight-8)+'px'; menu.querySelector('.mi').focus(); }
+function closeMenu() { menu.style.display = 'none'; }
+live.addEventListener('contextmenu', e => { e.preventDefault(); openMenu(e.clientX, e.clientY); });
+document.addEventListener('click', e => { if (!menu.contains(e.target)) closeMenu(); });
+function onMenuClick(e, isStatic) {
+  const m = e.target.closest('[data-m]')?.dataset.m; if (!m) return;
+  if (m === 'expand') { closeMenu(); S.mode === 'expanded' ? collapse() : expand(); return; }
+  if (m === 'settings') { closeMenu(); document.getElementById('settings').scrollIntoView({behavior:'smooth'}); return; }
+  setToggle(m, !S[m]); if (!isStatic) menu.innerHTML = menuHTML();
+}
+menu.addEventListener('click', e => onMenuClick(e, false));
+document.getElementById('menuStatic').addEventListener('click', e => onMenuClick(e, true));
+
+/* ---------- drag + snap ---------- */
+const floater = document.getElementById('floater'), dragDesk = document.getElementById('dragDesk');
+const SNAP = 24, GAP = 6;
+// Pure snap rule (mirrors the app's snap logic): within 24px of an edge or the centre line -> snap.
+function snap(x, y, w, h, W, H) {
+  if (x < SNAP) x = GAP; else if (x + w > W - SNAP) x = W - w - GAP;
+  if (y < SNAP) y = GAP; else if (y + h > H - SNAP) y = H - h - GAP;
+  if (Math.abs(x + w/2 - W/2) < SNAP) x = W/2 - w/2;
+  return [x, y];
+}
+function placeFloater() { floater.innerHTML = ''; floater.appendChild(staticIsland('collapsed')); floater.classList.toggle('unlocked', S.unlocked); }
+floater.style.left = '380px'; floater.style.top = '150px';
+floater.addEventListener('pointerdown', e => {
+  if (!S.unlocked) return;
+  const r = floater.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top, D = dragDesk.getBoundingClientRect();
+  floater.setPointerCapture(e.pointerId); floater.classList.remove('snap'); dragDesk.classList.add('dragging');
+  const move = ev => { floater.style.left = (ev.clientX - D.left - dx)+'px'; floater.style.top = (ev.clientY - D.top - dy)+'px'; };
+  const up = () => {
+    floater.removeEventListener('pointermove', move); dragDesk.classList.remove('dragging');
+    const [x, y] = snap(floater.offsetLeft, floater.offsetTop, floater.offsetWidth, floater.offsetHeight, dragDesk.clientWidth, dragDesk.clientHeight - 40);
+    floater.classList.add('snap'); floater.style.left = x+'px'; floater.style.top = y+'px';
+  };
+  floater.addEventListener('pointermove', move); floater.addEventListener('pointerup', up, { once:true });
+});
+
+/* ---------- auto-hide + peek ---------- */
+const hider = document.getElementById('hider'), peek = document.getElementById('peek'); let hideTimer, peekTimer;
+function renderHider() {
+  hider.innerHTML = ''; hider.appendChild(staticIsland('collapsed'));
+  if (hider.classList.contains('hidden')) hider.querySelectorAll('.mascot').forEach(m => { m.dataset.ex = 'sleepy'; m.innerHTML = face(S.skin, 'sleepy'); });
+}
+const renderPeek = () => peek.innerHTML = `<span class="mascot" style="width:46px;height:46px">${face(S.skin, 'wow')}</span><span class="say">hi 👋</span>`;
+const showPeek = () => { clearTimeout(peekTimer); if (hider.classList.contains('hidden')) peek.classList.add('on'); };
+const hidePeek = () => { clearTimeout(peekTimer); peekTimer = setTimeout(() => peek.classList.remove('on'), 800); };
+const reveal = () => { clearTimeout(hideTimer); peek.classList.remove('on'); hider.classList.remove('hidden'); renderHider(); };
+const hideSoon = () => { clearTimeout(hideTimer); hideTimer = setTimeout(() => { hider.classList.add('hidden'); renderHider(); }, 800); };
+const hstrip = document.getElementById('hstrip');
+hstrip.addEventListener('mouseenter', showPeek); hstrip.addEventListener('mouseleave', hidePeek);
+peek.addEventListener('mouseenter', showPeek); peek.addEventListener('mouseleave', hidePeek);
+peek.addEventListener('click', reveal);
+hider.addEventListener('mouseenter', () => clearTimeout(hideTimer)); hider.addEventListener('mouseleave', hideSoon);
+
+/* ---------- settings binding ---------- */
+function setToggle(k, v) {
+  S[k] = v;
+  document.querySelectorAll(`[data-toggle="${k}"]`).forEach(b => { b.classList.toggle('on', v); b.setAttribute('aria-checked', v); });
+  document.getElementById('menuStatic').innerHTML = `<div class="menu static">${menuHTML()}</div>`;
+  renderLive(); placeFloater();
+}
+document.querySelectorAll('[data-toggle]').forEach(b => b.addEventListener('click', () => setToggle(b.dataset.toggle, !S[b.dataset.toggle])));
+document.querySelectorAll('[data-num]').forEach(inp => {
+  const k = inp.dataset.num, out = inp.nextElementSibling; inp.value = S[k];
+  const show = () => out.textContent = k === 'opacity' ? S[k]+'%' : S[k];
+  show();
+  inp.addEventListener('input', () => { S[k] = +inp.value; show(); renderLive(); renderGallery(); placeFloater(); renderHider(); });
+});
+document.querySelectorAll('.seg[data-bind]').forEach(seg => seg.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return; const k = seg.dataset.bind, v = b.dataset.v;
+  if (k === 'src') return setSource(+v);
+  S[k] = v;
+  document.querySelectorAll(`.seg[data-bind="${k}"] button`).forEach(x => x.classList.toggle('on', x.dataset.v === v));
+  if (k === 'theme') document.documentElement.dataset.theme = v === 'auto' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : v;
+  renderAll();
+}));
+const ACCENTS = ['#FF8FB1','#BF7BFF','#4DA3FF','#30D158','#FF9F0A'];
+function renderPickers() {
+  document.getElementById('swatches').innerHTML = ACCENTS.map(c => `<button class="sw ${c===S.accent?'on':''}" style="background:${c}" data-c="${c}" aria-label="Accent ${c}" title="${c}"></button>`).join('');
+  document.querySelectorAll('.skinpick').forEach(p => {
+    const big = p.classList.contains('big');
+    p.innerHTML = SKIN_KEYS.map(k => `<button data-v="${k}" class="${k===S.skin?'on':''}" title="${Mascot.SKINS[k].name} — ${Mascot.SKINS[k].kind}"><span class="mascot" style="width:${big?32:22}px;height:${big?32:22}px">${face(k,'idle')}</span>${big?'':Mascot.SKINS[k].name}</button>`).join('');
+  });
+}
+document.getElementById('swatches').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (!b) return; S.accent = b.dataset.c; document.documentElement.style.setProperty('--brand', S.accent); renderPickers(); });
+
+/* ---------- gallery, sheet, chrome ---------- */
+const GALLERY = [
+  ['01 · Collapsed', 'mascot + clock', ['collapsed']],
+  ['02a · Compact: music', 'art on the left, live EQ on the right', ['music']],
+  ['02b · Compact: mail', 'unread badge', ['mail']],
+  ['02c · Compact: notification flash', 'ring, surprised mascot, auto-expands for 3 s', ['notif']],
+  ['02d · Minimal: two activities', 'music in the pill, mail in a separate bubble', ['music'], true],
+  ['02e · File drag-over', 'mascot turns into a box; drop adds the file to Apps', ['dropopen']],
+  ['03a · Expanded: overview', '', ['expanded','overview']],
+  ['03b · Expanded: music', 'any app in Windows media controls · ⇄ switches session', ['expanded','music']],
+  ['03c · Expanded: mail', 'unread headers only, scrolls to 5', ['expanded','mail']],
+  ['03d · Expanded: notification', 'history of 20 · per-app mute · DND', ['expanded','alerts']],
+  ['03e · Expanded: app shortcuts', 'drag to reorder; right-click to remove, run as admin, or rename', ['expanded','apps']],
+];
+function renderGallery() {
+  const g = document.getElementById('gallery'); g.innerHTML = '';
+  for (const [lbl, note, [mode, tab], split] of GALLERY) {
+    const card = document.createElement('div'); card.className = 'card';
+    card.innerHTML = `<div class="lbl">${lbl}<span>${note}</span></div><div class="stage"></div>`;
+    const st = card.querySelector('.stage'); st.appendChild(staticIsland(mode, tab));
+    if (split) { const b = document.createElement('div'); b.className = 'bubble on'; b.style.transition = 'none'; b.innerHTML = `${ic('mail',16)}<span class="badge">3</span>`; st.appendChild(b); }
+    g.appendChild(card);
+  }
+}
+function renderSheet() {
+  const cell = (svg, label, attrs='') => `<div class="cell"><span class="mascot" ${attrs} style="width:56px;height:56px">${svg}</span>${label}</div>`;
+  document.getElementById('sheet').innerHTML = SKIN_KEYS.map(k => `<b class="skinlbl">${Mascot.SKINS[k].name}<small>${Mascot.SKINS[k].kind}</small></b>` +
+    Mascot.EXPRESSIONS.map(ex => cell(face(k, ex), ex, ex === 'idle' ? `data-ex="idle" data-skin="${k}"` : '')).join('')).join('') +
+    `<b class="skinlbl">Drop form<small>any skin</small></b>${cell(Mascot.box(true), 'box · open')}${cell(Mascot.box(false), 'box · swallowed')}`;
+}
+document.querySelectorAll('.browser').forEach(b => b.innerHTML = `<div class="tabstrip"><span class="tab on">Inbox — Mail</span><span class="tab">Docs: Q3 plan</span><span class="tab">kawaii-island · GitHub</span><span class="muted" style="padding:0 8px 8px">+</span></div><div class="addr"><span>mail.example.com/inbox</span></div><div class="pagelines">${[62,48,70,40,55,66,35].map(w => `<i style="width:${w}%"></i>`).join('')}</div>`);
+document.querySelectorAll('.taskbar').forEach(t => t.innerHTML = ['#3C8CE7','#FF9F0A','#30D158','#7B6CF6','#FF8FB1','#8E8E93'].map(c => `<i style="background:${c}"></i>`).join(''));
+function renderAll() {
+  document.getElementById('logo').innerHTML = mascot('idle', 26);
+  document.getElementById('winMascot').innerHTML = mascot('idle', 18);
+  document.getElementById('menuStatic').innerHTML = `<div class="menu static">${menuHTML()}</div>`;
+  renderLive(true); renderGallery(); renderSheet(); renderPickers(); placeFloater(); renderHider(); renderPeek();
+}
+setSource(0);
+renderAll();
+</script>
+</body>
+</html>

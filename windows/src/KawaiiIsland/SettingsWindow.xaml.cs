@@ -69,6 +69,10 @@ public partial class SettingsWindow : Window
         BehaviorPanel.Children.Clear();
         Field(BehaviorPanel, "Collapse after", Segments(App.CollapseChoices, Island.AutoCollapseSeconds.ToString(),
                v => Island.SetAutoCollapse(int.Parse(v))));
+        Switch(BehaviorPanel, "App shortcuts", "Your pinned apps on the island. Add with + or drop files on the island; right-click an app to rename or remove it.",
+               C.Modules.Shortcuts.Enabled, Island.SetShortcutsEnabled);
+        Field(BehaviorPanel, "Max pinned apps", Segments([("4", "4"), ("6", "6"), ("8", "8"), ("12", "12")], C.Modules.Shortcuts.Max.ToString(),
+               v => { C.Modules.Shortcuts.Max = int.Parse(v); _app.Config.SaveSoon(); Island.SetShortcutsEnabled(C.Modules.Shortcuts.Enabled); }));
         Switch(BehaviorPanel, "Music", "Shows what's playing in any app that uses Windows media controls: Spotify, Apple Music, browsers, VLC…",
                Island.MusicEnabled, Island.SetMusicEnabled);
 

@@ -26,6 +26,40 @@ internal static partial class Win32
     /// <summary>Mouse position in physical screen pixels (works anywhere on screen, not just over our window).</summary>
     public static System.Windows.Point CursorPos() => GetCursorPos(out var p) ? new(p.X, p.Y) : new(double.NaN, double.NaN);
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct SHFILEINFO
+    {
+        public nint hIcon;
+        public int iIcon;
+        public uint dwAttributes;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string szDisplayName;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)] public string szTypeName;
+    }
+
+    private const uint SHGFI_ICON = 0x100, SHGFI_LARGEICON = 0x0;
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern nint SHGetFileInfo(string path, uint attributes, ref SHFILEINFO info, uint size, uint flags);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool DestroyIcon(nint hIcon);
+
+    /// <summary>The shell's 32 px icon for any file, shortcut or folder (what Explorer shows), or null.</summary>
+    public static System.Windows.Media.Imaging.BitmapSource? FileIcon(string path)
+    {
+        var info = new SHFILEINFO();
+        if (SHGetFileInfo(path, 0, ref info, (uint)Marshal.SizeOf<SHFILEINFO>(), SHGFI_ICON | SHGFI_LARGEICON) == 0 || info.hIcon == 0) return null;
+        try
+        {
+            var icon = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(info.hIcon, System.Windows.Int32Rect.Empty,
+                System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+            icon.Freeze();
+            return icon;
+        }
+        finally { DestroyIcon(info.hIcon); }
+    }
+
     /// <summary>Marks the window as a non-activating tool window.</summary>
     public static void MakeToolWindow(nint hwnd)
     {

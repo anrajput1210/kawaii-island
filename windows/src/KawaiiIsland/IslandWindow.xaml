@@ -53,6 +53,29 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- App shortcut tile: icon + label, no background shape; hover lifts the label to full colour. -->
+        <Style x:Key="Tile" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource IslandMuted}"/>
+            <Setter Property="FontFamily" Value="{DynamicResource IslandFont}"/>
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Width" Value="56"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent" Padding="2,4">
+                            <ContentPresenter HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <!-- Expanded-view tabs (only shown when more than one module has something to show). -->
         <Style x:Key="Tab" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{DynamicResource IslandMuted}"/>
@@ -88,7 +111,7 @@
                HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,1,0,0"
                Stroke="{DynamicResource Accent}" StrokeThickness="1.5" StrokeDashArray="3 2.5"/>
     <Border x:Name="Pill" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,6,0,0"
-            Background="{DynamicResource IslandBackground}" BorderThickness="1" BorderBrush="#1FFFFFFF"
+            Background="{DynamicResource IslandBackground}" BorderThickness="1" BorderBrush="#1FFFFFFF" AllowDrop="True"
             RenderTransformOrigin="0.5,0" Cursor="Hand">
         <Border.RenderTransform>
             <TransformGroup>
@@ -161,6 +184,7 @@
                             <RadioButton x:Name="TabCode" Content="Code" Style="{StaticResource Tab}" GroupName="view"/>
                             <RadioButton x:Name="TabAlerts" Content="Alerts" Style="{StaticResource Tab}" GroupName="view"/>
                             <RadioButton x:Name="TabMail" Content="Mail" Style="{StaticResource Tab}" GroupName="view"/>
+                            <RadioButton x:Name="TabApps" Content="Apps" Style="{StaticResource Tab}" GroupName="view"/>
                         </StackPanel>
                     </DockPanel>
                     <DockPanel x:Name="MainRow">
@@ -229,6 +253,9 @@
                             </StackPanel>
                         </Grid>
                     </StackPanel>
+
+                    <!-- App shortcuts (spec §3.4): pinned apps, + to add; drop files on the island to pin, drag a tile to reorder -->
+                    <WrapPanel x:Name="AppsPanel" Margin="-2,10,0,0" Visibility="Collapsed"/>
 
                     <!-- Mail (spec §3.1): unread count + latest 5 headers; clicking opens mail -->
                     <StackPanel x:Name="MailPanel" Visibility="Collapsed">

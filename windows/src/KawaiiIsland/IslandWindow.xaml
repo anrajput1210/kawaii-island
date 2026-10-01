@@ -80,12 +80,14 @@
         <Style x:Key="Tab" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{DynamicResource IslandMuted}"/>
             <Setter Property="FontFamily" Value="{DynamicResource IslandFont}"/>
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontWeight" Value="Medium"/>
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="Bg" Background="Transparent" CornerRadius="99" Padding="9,3" Margin="0,0,2,0">
+                        <!-- No background shape: the selected tab is just bright, bold text -->
+                        <Border Background="Transparent" Padding="0,3" Margin="0,0,16,0">
                             <ContentPresenter/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -93,9 +95,8 @@
                                 <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource IslandTrack}"/>
                                 <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
-                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

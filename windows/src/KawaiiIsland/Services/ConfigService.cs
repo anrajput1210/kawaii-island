@@ -90,7 +90,9 @@ public sealed class ConfigService : IDisposable
 public sealed class AppConfig
 {
     public const string DefaultMascot = "kiko";
-    public static readonly string[] Mascots = ["kiko", "miso", "bun", "bolt", "ribbit"];
+    public static readonly string[] Mascots = ["kiko", "miso", "bun", "bolt", "ribbit",
+        "valor", "rumble", "forge", "brick", "trick", "gloom", "scruff",            // hero crew
+        "sunny", "kit", "snow", "rosy", "grit", "tidy", "sprout", "clover"];       // anime crew
     /// <summary>"none" hides the mascot.</summary>
     public const string NoMascot = "none";
 

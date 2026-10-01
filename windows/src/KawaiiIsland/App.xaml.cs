@@ -208,6 +208,10 @@ public partial class App : Application
     internal static string MascotName(string key) => key switch
     {
         "kiko" => "Kiko · anime girl", "miso" => "Miso · cat", "bun" => "Bun · bunny", "bolt" => "Bolt · robot", "ribbit" => "Ribbit · frog",
+        "valor" => "Valor · star pup", "rumble" => "Rumble · thunder bear", "forge" => "Forge · armor bot", "brick" => "Brick · big green buddy",
+        "trick" => "Trick · mischief goat", "gloom" => "Gloom · iron owl", "scruff" => "Scruff · grumpy wolverine",
+        "sunny" => "Sunny · straw-hat monkey", "kit" => "Kit · ninja fox", "snow" => "Snow · cool snow cat", "rosy" => "Rosy · spiky-hair kid",
+        "grit" => "Grit · brave hamster", "tidy" => "Tidy · neat kitten", "sprout" => "Sprout · spiky pup", "clover" => "Clover · freckled bunny",
         AppConfig.NoMascot => "No mascot", _ => key,
     };
 

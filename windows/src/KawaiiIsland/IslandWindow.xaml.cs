@@ -44,7 +44,7 @@ public partial class IslandWindow : Window
     private bool _compact; // 280x40 "compact-active" size (spec §2) while something is going on
 
     private WindowConfig Win => _config.Current.Window;
-    private MascotControl[] Mascots => [MascotSmall, MascotLarge];
+    private MascotControl[] Mascots => [MascotSmall, MascotLarge, MascotTiny];
 
     public IslandWindow(ConfigService config)
     {
@@ -80,6 +80,7 @@ public partial class IslandWindow : Window
         App.Cleanup += _appBar.Dispose; // crash or exit: never leave a reserved strip behind
         InitCodeMode();
         InitAutoHide();
+        InitMusic();
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -96,6 +97,7 @@ public partial class IslandWindow : Window
         SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged; // static event: unsubscribe or leak
         _appBar.Dispose();
         StopCodeMode();
+        _mediaService?.Dispose();
         base.OnClosed(e);
     }
 
@@ -121,6 +123,8 @@ public partial class IslandWindow : Window
         BigClock.Text = now.ToString("t");
         if (CodeLinePanel.Visibility != Visibility.Visible) Clock.Text = BigClock.Text; // Code mode shows usage there
         DateText.Text = now.ToString("dddd, MMMM d");
+        SmallClock.Text = BigClock.Text;
+        TickMusic();
     }
 
     // ---------------- placement (physical pixels via Win32; see Services/Native) ----------------
@@ -376,11 +380,11 @@ public partial class IslandWindow : Window
         PlaceIsland();
     }
 
-    /// <summary>Width, height and corner radius move together with a spring (BackEase, 320 ms).</summary>
+    /// <summary>Width, height and corner radius move together, smooth ease-out with no overshoot (400 ms).</summary>
     private void AnimatePill(double width, double height, double radius)
     {
-        var ease = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.35 };
-        var d = Motion.Ms(320);
+        var ease = Motion.Smooth;
+        var d = Motion.Ms(400);
         Pill.BeginAnimation(WidthProperty, new DoubleAnimation(width, d) { EasingFunction = ease });
         Pill.BeginAnimation(HeightProperty, new DoubleAnimation(height, d) { EasingFunction = ease });
         BeginAnimation(PillRadiusProperty, new DoubleAnimation(radius, d) { EasingFunction = ease });
@@ -436,7 +440,7 @@ public partial class IslandWindow : Window
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
         HoverScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(over ? 1.04 : 1, d) { EasingFunction = ease });
         HoverScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(over ? 1.04 : 1, d) { EasingFunction = ease });
-        Shadow.BeginAnimation(DropShadowEffect.ColorProperty, new ColorAnimation(over ? Accent() : Colors.Black, d));
+        Shadow.BeginAnimation(DropShadowEffect.ColorProperty, new ColorAnimation(over ? GlowColor() : Colors.Black, d));
         Shadow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, new DoubleAnimation(over ? 32 : 24, d));
         Shadow.BeginAnimation(DropShadowEffect.OpacityProperty, new DoubleAnimation(over ? 0.6 : 0.45, d));
 

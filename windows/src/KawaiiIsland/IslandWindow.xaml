@@ -6,6 +6,57 @@
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize" ShowActivated="False"
         UseLayoutRounding="True">
+    <Window.Resources>
+        <!-- Round icon button (media controls). Glyphs: Segoe Fluent Icons on Windows 11, MDL2 on 10. -->
+        <Style x:Key="Glyph" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
+            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="Transparent" CornerRadius="99" Padding="7">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource IslandTrack}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bg" Property="Opacity" Value="0.35"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Expanded-view tabs (only shown when more than one module has something to show). -->
+        <Style x:Key="Tab" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource IslandMuted}"/>
+            <Setter Property="FontFamily" Value="{DynamicResource IslandFont}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bg" Background="Transparent" CornerRadius="99" Padding="9,3" Margin="0,0,2,0">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource IslandTrack}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <!-- The window is sized for the expanded island + shadow; fully transparent pixels are click-through,
          so only the pill itself receives input. The pill grows from its top-centre. -->
     <Grid>
@@ -35,6 +86,13 @@
                     <TextBlock x:Name="CodeLine" Margin="7,0,0,0" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
                                FontSize="12" FontWeight="Medium" TextTrimming="CharacterEllipsis" MaxWidth="150"/>
                 </StackPanel>
+                <!-- Music (compact 280x40): album art + title, live equalizer on the right -->
+                <StackPanel x:Name="MusicLinePanel" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                    <Border x:Name="MiniArt" Width="26" Height="26" CornerRadius="6"/>
+                    <TextBlock x:Name="MusicLine" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource IslandText}"
+                               FontFamily="{DynamicResource IslandFont}" FontSize="12" FontWeight="Medium" TextTrimming="CharacterEllipsis" MaxWidth="185"/>
+                </StackPanel>
+                <StackPanel x:Name="Eq" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Height="16" Visibility="Collapsed"/>
                 <TextBlock x:Name="Clock" HorizontalAlignment="Right" VerticalAlignment="Center"
                            Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
                            FontWeight="SemiBold" FontSize="13"/>
@@ -45,7 +103,17 @@
             <Grid x:Name="ExpandedPanel" Visibility="Collapsed" Opacity="0"
                   HorizontalAlignment="Center" VerticalAlignment="Top">
                 <StackPanel x:Name="ExpandedItems" Margin="18,14,18,14">
-                    <DockPanel>
+                    <!-- Header for module views: tabs (when needed) + small clock + mascot -->
+                    <DockPanel x:Name="TabRow" Margin="0,0,0,8" Visibility="Collapsed">
+                        <c:MascotControl x:Name="MascotTiny" DockPanel.Dock="Right" Width="22" Height="22" Margin="8,0,0,0"/>
+                        <TextBlock x:Name="SmallClock" DockPanel.Dock="Right" VerticalAlignment="Center" Foreground="{DynamicResource IslandMuted}"
+                                   FontFamily="{DynamicResource IslandFont}" FontSize="12" FontWeight="SemiBold"/>
+                        <StackPanel x:Name="Tabs" Orientation="Horizontal" VerticalAlignment="Center">
+                            <RadioButton x:Name="TabMusic" Content="Music" Style="{StaticResource Tab}" GroupName="view"/>
+                            <RadioButton x:Name="TabCode" Content="Code" Style="{StaticResource Tab}" GroupName="view"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <DockPanel x:Name="MainRow">
                         <c:MascotControl x:Name="MascotLarge" DockPanel.Dock="Right" Width="40" Height="40" VerticalAlignment="Top"/>
                         <StackPanel x:Name="ClockBlock">
                             <TextBlock x:Name="BigClock" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
@@ -66,9 +134,43 @@
                     <TextBlock x:Name="Greeting" Margin="0,14,0,0" Text="Hi! Nothing new right now." Foreground="{DynamicResource IslandMuted}"
                                FontFamily="{DynamicResource IslandFont}" FontSize="12"/>
                     <!-- Code mode: context / 5-hour / weekly meters (built in IslandWindow.Code.cs) -->
-                    <UniformGrid x:Name="CodeMeters" Columns="3" Margin="0,14,0,0" Visibility="Collapsed"/>
+                    <UniformGrid x:Name="CodeMeters" Columns="3" Margin="0,10,0,0" Visibility="Collapsed"/>
                     <TextBlock x:Name="CodeFooter" Margin="0,10,0,0" Visibility="Collapsed" Foreground="{DynamicResource IslandMuted}"
                                FontFamily="{DynamicResource IslandFont}" FontSize="11"/>
+
+                    <!-- Music (spec §3.3): art + title/artist + EQ, progress, controls. Follows the system's current media session. -->
+                    <StackPanel x:Name="MusicPanel" Visibility="Collapsed">
+                        <DockPanel>
+                            <Grid Width="46" Height="46">
+                                <Border x:Name="ArtPlaceholder" CornerRadius="10">
+                                    <TextBlock Text="&#x266A;" Foreground="White" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <Border x:Name="BigArt" CornerRadius="10"/>
+                            </Grid>
+                            <StackPanel x:Name="BigEq" DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Height="16"/>
+                            <StackPanel Margin="12,0,10,0" VerticalAlignment="Center">
+                                <TextBlock x:Name="SongTitle" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
+                                           FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock x:Name="SongArtist" Margin="0,2,0,0" Foreground="{DynamicResource IslandMuted}" FontFamily="{DynamicResource IslandFont}"
+                                           FontSize="11.5" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </DockPanel>
+                        <DockPanel Margin="0,8,0,0">
+                            <TextBlock x:Name="PosText" Width="34" Foreground="{DynamicResource IslandMuted}" FontFamily="{DynamicResource IslandFont}" FontSize="10.5"/>
+                            <TextBlock x:Name="RemText" DockPanel.Dock="Right" Width="40" TextAlignment="Right" Foreground="{DynamicResource IslandMuted}"
+                                       FontFamily="{DynamicResource IslandFont}" FontSize="10.5"/>
+                            <Border x:Name="ProgressTrack" Height="4" CornerRadius="2" Margin="4,0" Background="{DynamicResource IslandTrack}">
+                                <Border x:Name="ProgressFill" CornerRadius="2" HorizontalAlignment="Left" Width="0" Background="{DynamicResource IslandText}"/>
+                            </Border>
+                        </DockPanel>
+                        <Grid Margin="0,4,0,0">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <Button x:Name="PrevButton" Style="{StaticResource Glyph}" Content="&#xE892;" FontSize="16" ToolTip="Previous" AutomationProperties.Name="Previous"/>
+                                <Button x:Name="PlayButton" Style="{StaticResource Glyph}" Content="&#xE768;" FontSize="20" Margin="14,0" ToolTip="Play/pause" AutomationProperties.Name="Play or pause"/>
+                                <Button x:Name="NextButton" Style="{StaticResource Glyph}" Content="&#xE893;" FontSize="16" ToolTip="Next" AutomationProperties.Name="Next"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
         </Grid>

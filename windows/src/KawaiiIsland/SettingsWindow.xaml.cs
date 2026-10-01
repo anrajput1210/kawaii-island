@@ -68,6 +68,8 @@ public partial class SettingsWindow : Window
         BehaviorPanel.Children.Clear();
         Field(BehaviorPanel, "Collapse after", Segments(App.CollapseChoices, Island.AutoCollapseSeconds.ToString(),
                v => Island.SetAutoCollapse(int.Parse(v))));
+        Switch(BehaviorPanel, "Music", "Shows what's playing in any app that uses Windows media controls: Spotify, Apple Music, browsers, VLC…",
+               Island.MusicEnabled, Island.SetMusicEnabled);
 
         AppearancePanel.Children.Clear();
         Field(AppearancePanel, "Theme", Segments([("Dark", "dark"), ("Light", "light"), ("Auto", "auto")], C.Appearance.Theme,

@@ -107,8 +107,8 @@ public partial class IslandWindow
         _peekRetract.Stop();
         show &= _hidden;
         var (x, y) = Toward(HideEdge, show ? PeekTuck + Gap : PeekSize + Gap + 2);
-        var d = Motion.Ms(show ? 340 : 200);
-        IEasingFunction ease = show ? new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.35 } : new CubicEase { EasingMode = EasingMode.EaseIn };
+        var d = Motion.Ms(show ? 380 : 220);
+        IEasingFunction ease = show ? Motion.Smooth : new CubicEase { EasingMode = EasingMode.EaseIn };
         PeekShift.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(x, d) { EasingFunction = ease });
         PeekShift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(y, d) { EasingFunction = ease });
         PeekBubble.BeginAnimation(OpacityProperty, new DoubleAnimation(show ? 1 : 0, Motion.Ms(200)) { BeginTime = Motion.Delay(show ? 180 : 0) });

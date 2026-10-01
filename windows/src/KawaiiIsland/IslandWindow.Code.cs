@@ -35,7 +35,7 @@ public partial class IslandWindow
     {
         _meters = [Meter("Context"), Meter("5-hour"), Meter("Week")];
         _tracker.Changed += OnCodeChanged;
-        _doneTimer.Tick += (_, _) => { _doneTimer.Stop(); _doneShown = false; SetBaseExpression("idle"); RenderCode(); };
+        _doneTimer.Tick += (_, _) => { _doneTimer.Stop(); _doneShown = false; SetBaseExpression(IdleExpression); RenderCode(); };
         _peekTimer.Tick += (_, _) => { _peekTimer.Stop(); if (!Pill.IsMouseOver) SetExpanded(false); };
         foreach (var dot in new[] { CodeDot, CodeDotLarge })
             dot.BeginAnimation(OpacityProperty, Motion.Enabled
@@ -72,7 +72,7 @@ public partial class IslandWindow
         _server?.Dispose();
         _server = null;
         _doneShown = false;
-        SetBaseExpression("idle");
+        SetBaseExpression(IdleExpression);
         RenderCode();
     }
 
@@ -93,6 +93,7 @@ public partial class IslandWindow
         switch (state)
         {
             case CodeState.NeedsYou:
+                _picked = null; // show the Code view
                 SetBaseExpression("surprised");
                 if (!_expanded) { SetExpanded(true); _peekTimer.Stop(); _peekTimer.Start(); }
                 break;
@@ -104,7 +105,7 @@ public partial class IslandWindow
                 SetBaseExpression("wow");
                 break;
             default:
-                SetBaseExpression("idle");
+                SetBaseExpression(IdleExpression);
                 break;
         }
     }
@@ -116,8 +117,8 @@ public partial class IslandWindow
         bool busy = s is { State: CodeState.Thinking or CodeState.Tool or CodeState.NeedsYou } || (s?.State == CodeState.Done && _doneShown);
 
         // compact pill
-        SetCompact(busy);
-        CodeLinePanel.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+        _codeBusy = busy;
+        RenderCompact();
         var color = s?.State switch
         {
             CodeState.Thinking or CodeState.Tool => Working,
@@ -139,8 +140,7 @@ public partial class IslandWindow
                    : DateTime.Now.ToString("t");
 
         // expanded panel
-        ClockBlock.Visibility = Greeting.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
-        CodeHeader.Visibility = CodeMeters.Visibility = CodeFooter.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        RenderExpanded();
         if (!on) return;
 
         CodeTitle.Text = s is null ? "Claude Code" : $"Claude Code · {s.Project}";

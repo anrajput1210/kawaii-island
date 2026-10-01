@@ -8,6 +8,11 @@
         UseLayoutRounding="True">
     <!-- The window is sized for the expanded island + shadow; fully transparent pixels are click-through,
          so only the pill itself receives input. The pill grows from its top-centre. -->
+    <Grid>
+    <!-- Dashed outline shown while unlocked (drag mode). -->
+    <Rectangle x:Name="Outline" Visibility="Collapsed" IsHitTestVisible="False"
+               HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,1,0,0"
+               Stroke="{DynamicResource Accent}" StrokeThickness="1.5" StrokeDashArray="3 2.5"/>
     <Border x:Name="Pill" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,6,0,0"
             Background="{DynamicResource IslandBackground}" RenderTransformOrigin="0.5,0" Cursor="Hand">
         <Border.RenderTransform>
@@ -44,4 +49,5 @@
             </Grid>
         </Grid>
     </Border>
+    </Grid>
 </Window>

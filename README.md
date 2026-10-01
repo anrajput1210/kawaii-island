@@ -119,7 +119,20 @@ Mascot art has a single source: `design/mascot/mascot.js`. Regenerate the SVGs a
 
 ## Mail
 
-Settings → Mail. The **Demo inbox** (default) shows sample messages so you can see how it looks. Pick **IMAP** and enter your server, username and an **app password** (Gmail and Outlook require one; OAuth isn't supported yet). Kawaii Island opens INBOX read-only, reads unread **headers only**, and waits for new mail with IMAP IDLE (or polls every `pollSeconds`). New mail updates the badge and makes the mascot hop; it never pops the island open. Subjects only show when *Show message previews* is on. Clicking opens webmail for Gmail/Outlook/Yahoo/iCloud servers, `openUrl` if you set one, or your default mail app.
+Settings → Mail → **Account**:
+
+- **Gmail** / **Outlook** — click **Sign in with Google / Microsoft**. Your browser opens the provider's own sign-in page (your password never touches Kawaii Island), and the app keeps only a refresh token, encrypted for your Windows user (`mail.oauth`, DPAPI). It reads INBOX read-only over IMAP with that token (`imap.gmail.com`, `outlook.office365.com`): unread **headers only**, new mail via IMAP IDLE.
+- **Other (IMAP)** — server, username and an app password (DPAPI-encrypted in `mail.secret`).
+- **Demo** — sample messages, no account.
+
+New mail updates the badge and makes the mascot hop; it never pops the island open. Subjects only show when *Show message previews* is on. Clicking opens Gmail / Outlook on the web (or `openUrl`).
+
+### Mail sign-in: app registrations (one-time, for whoever builds/ships the app)
+
+Sign-in needs an OAuth "client ID" from each provider. Client IDs aren't secrets; paste them in Settings → Mail → *App registration*.
+
+- **Microsoft (Outlook.com, Hotmail, Microsoft 365)** — [Microsoft Entra admin center](https://entra.microsoft.com) → App registrations → New registration → *Accounts in any organizational directory and personal Microsoft accounts* → Redirect URI: *Public client/native (mobile & desktop)* `http://localhost` → API permissions → add *Office 365 Exchange Online* (or *Microsoft Graph*) → `IMAP.AccessAsUser.All`, plus `offline_access`, `openid`, `email`. Copy the **Application (client) ID**. Free.
+- **Google (Gmail)** — [Google Cloud console](https://console.cloud.google.com) → new project → enable **Gmail API** → OAuth consent screen (External; add yourself under *Test users*) → Credentials → Create OAuth client ID → **Desktop app**. Copy the **client ID** and **client secret** (for desktop apps Google treats it as public). Gmail's `https://mail.google.com/` scope is *restricted*: up to 100 test users work right away; a public release needs Google's verification.
 
 ## Known limitations
 

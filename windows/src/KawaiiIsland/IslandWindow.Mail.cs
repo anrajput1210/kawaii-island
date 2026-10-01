@@ -47,16 +47,33 @@ public partial class IslandWindow
     private async Task StartMailAsync()
     {
         IMailProvider provider;
-        if (MailCfg.Provider == "imap")
+        string dir = _config.Directory;
+        if (OAuthProvider.For(MailCfg.Provider) is { } oauth)
         {
-            if (MailCfg.Server.Length == 0 || MailCfg.Username.Length == 0 || MailSecret.Load(_config.Directory) is not { } password)
+            if (OAuth.Load(dir) is not { Provider: var signedIn } || signedIn != oauth.Key)
+            {
+                MailProblem = $"Sign in with {oauth.Name} in Settings → Mail.";
+                return;
+            }
+            var (id, secret) = ClientFor(oauth);
+            provider = new ImapMailProvider(oauth.ImapHost, 993, ssl: true, MailCfg.PollSeconds, async (client, ct) =>
+            {
+                var account = OAuth.Load(dir) ?? throw new OAuthException("Not signed in.");
+                string token = await OAuth.AccessTokenAsync(oauth, account, id, secret, dir, ct);
+                await client.AuthenticateAsync(new MailKit.Security.SaslMechanismOAuth2(account.Email, token), ct);
+            });
+        }
+        else if (MailCfg.Provider == "imap")
+        {
+            if (MailCfg.Server.Length == 0 || MailCfg.Username.Length == 0 || MailSecret.Load(dir) is not { } password)
             {
                 MailProblem = "Add your server, username and password in Settings → Mail.";
                 return;
             }
-            provider = new ImapMailProvider(MailCfg, password);
+            string user = MailCfg.Username;
+            provider = new ImapMailProvider(MailCfg.Server, MailCfg.Port, MailCfg.Ssl, MailCfg.PollSeconds, (client, ct) => client.AuthenticateAsync(user, password, ct));
         }
-        else provider = new MockMailProvider(_config.Directory);
+        else provider = new MockMailProvider(dir);
 
         _mail = provider;
         provider.Changed += snapshot => Dispatcher.BeginInvoke(() => { if (ReferenceEquals(_mail, provider)) OnMail(snapshot); });
@@ -66,6 +83,9 @@ public partial class IslandWindow
         if (problem is not null) { App.Log.LogWarning("Mail: {Problem}", problem); StopMail(); }
         ((App)Application.Current).RefreshSettings();
     }
+
+    internal (string Id, string Secret) ClientFor(OAuthProvider p) =>
+        p.Key == "google" ? (MailCfg.GoogleClientId.Trim(), MailCfg.GoogleClientSecret.Trim()) : (MailCfg.MicrosoftClientId.Trim(), "");
 
     private void StopMail()
     {
@@ -123,6 +143,7 @@ public partial class IslandWindow
     {
         string server = MailCfg.Server.ToLowerInvariant();
         string target = MailCfg.OpenUrl.Length > 0 ? MailCfg.OpenUrl
+            : OAuthProvider.For(MailCfg.Provider) is { } signedIn ? signedIn.WebMail
             : server.Contains("gmail") || server.Contains("google") ? "https://mail.google.com/"
             : server.Contains("outlook") || server.Contains("office365") || server.Contains("hotmail") ? "https://outlook.live.com/mail/"
             : server.Contains("yahoo") ? "https://mail.yahoo.com/"

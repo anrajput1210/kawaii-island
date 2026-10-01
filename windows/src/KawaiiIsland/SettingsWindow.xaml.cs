@@ -171,8 +171,9 @@ public partial class SettingsWindow : Window
         MailSettingsPanel.Children.Clear();
         Switch(MailSettingsPanel, "Show mail", Island.MailProblem ?? "Unread count on the island and your latest 5 messages (headers only, never bodies).",
                mail.Enabled, async on => { mail.Enabled = on; _app.Config.SaveSoon(); await Island.RestartMailAsync(); Later(Reload); });
-        Field(MailSettingsPanel, "Account", Segments([("Demo inbox", "mock"), ("IMAP", "imap")], mail.Provider,
+        Field(MailSettingsPanel, "Account", Segments([("Demo", "mock"), ("Gmail", "google"), ("Outlook", "microsoft"), ("Other (IMAP)", "imap")], mail.Provider,
                async v => { mail.Provider = v; _app.Config.SaveSoon(); await Island.RestartMailAsync(); Later(Reload); }));
+        if (OAuthProvider.For(mail.Provider) is { } oauth) { BuildSignIn(oauth); return; }
         if (mail.Provider != "imap") return;
 
         var server = TextRow("Server", mail.Server, "imap.gmail.com");
@@ -225,6 +226,65 @@ public partial class SettingsWindow : Window
         };
         StyleBox(box);
         return box;
+    }
+
+    /// <summary>Sign in with Google / Microsoft: one button, browser does the rest. Client IDs live under "App registration".</summary>
+    private void BuildSignIn(OAuthProvider oauth)
+    {
+        var mail = C.Modules.Mail;
+        string dir = _app.Config.Directory;
+        var account = OAuth.Load(dir) is { } a && a.Provider == oauth.Key ? a : null;
+
+        var button = new Button { Padding = new Thickness(16, 6, 16, 6) };
+        if (account is null)
+        {
+            button.Content = $"Sign in with {oauth.Name}";
+            button.Click += async (_, _) =>
+            {
+                button.IsEnabled = false;
+                button.Content = "Finish signing in in your browser…";
+                try
+                {
+                    var (id, secret) = Island.ClientFor(oauth);
+                    OAuth.Save(dir, await OAuth.SignInAsync(oauth, id, secret, CancellationToken.None));
+                    await Island.RestartMailAsync();
+                }
+                catch (Exception ex) when (ex is OAuthException or System.Net.Http.HttpRequestException or System.ComponentModel.Win32Exception)
+                {
+                    MessageBox.Show(this, ex.Message, $"Sign in with {oauth.Name}", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                Later(Reload);
+            };
+            Field(MailSettingsPanel, "Account", button);
+        }
+        else
+        {
+            button.Content = "Sign out";
+            button.Click += async (_, _) => { OAuth.Delete(dir); await Island.RestartMailAsync(); Later(Reload); };
+            Field(MailSettingsPanel, $"Signed in as {(account.Email.Length > 0 ? account.Email : oauth.Name)}", button);
+        }
+
+        Heading(MailSettingsPanel, "App registration");
+        var note = Label(oauth.Key == "google"
+            ? "Google Cloud console → OAuth client ID → Desktop app, with the Gmail API enabled. Paste its ID and secret (a desktop-app secret isn't really secret)."
+            : "Microsoft Entra → App registrations → Mobile and desktop app, redirect http://localhost, IMAP.AccessAsUser.All permission. Paste its Application (client) ID.", 11.5, "IslandMuted");
+        note.TextWrapping = TextWrapping.Wrap;
+        Row(MailSettingsPanel, note);
+        TextBox Box(string label, string value, Action<string> set)
+        {
+            var box = new TextBox { Text = value, Padding = new Thickness(6, 4, 6, 4) };
+            StyleBox(box);
+            AutomationProperties.SetName(box, label);
+            box.LostFocus += (_, _) => { set(box.Text.Trim()); _app.Config.SaveSoon(); };
+            Field(MailSettingsPanel, label, box);
+            return box;
+        }
+        if (oauth.Key == "google")
+        {
+            Box("Client ID", mail.GoogleClientId, v => mail.GoogleClientId = v);
+            Box("Client secret", mail.GoogleClientSecret, v => mail.GoogleClientSecret = v);
+        }
+        else Box("Client ID", mail.MicrosoftClientId, v => mail.MicrosoftClientId = v);
     }
 
     /// <summary>Settings → Widgets: what the resting pill and the open island show.</summary>

@@ -103,7 +103,7 @@ internal sealed class MockMailProvider(string directory) : IMailProvider
 /// IMAP via MailKit: INBOX read-only, unread headers only. Waits with IDLE when the server supports it (re-issued
 /// every 9 min), otherwise polls every PollSeconds. Reconnects with backoff (5 s → 5 min) after errors.
 /// </summary>
-internal sealed class ImapMailProvider(MailConfig config, string password) : IMailProvider
+internal sealed class ImapMailProvider(string host, int port, bool ssl, int pollSeconds, Func<ImapClient, CancellationToken, Task> authenticate) : IMailProvider
 {
     private const int Latest = 20;
     private readonly CancellationTokenSource _cts = new();
@@ -113,10 +113,11 @@ internal sealed class ImapMailProvider(MailConfig config, string password) : IMa
     public async Task<string?> StartAsync()
     {
         try { using var probe = await ConnectAsync(_cts.Token); }
-        catch (AuthenticationException) { return "The mail server rejected the username or password. Gmail and Outlook need an app password."; }
-        catch (Exception ex) when (ex is IOException or System.Net.Sockets.SocketException or SslHandshakeException or ImapProtocolException or ImapCommandException)
+        catch (AuthenticationException) { return "The mail server rejected the sign-in. For IMAP, Gmail and Outlook need an app password; or use Sign in with Google / Microsoft."; }
+        catch (OAuthException ex) { return "Sign-in expired or was revoked: " + ex.Message + " Sign in again in Settings → Mail."; }
+        catch (Exception ex) when (ex is IOException or System.Net.Sockets.SocketException or SslHandshakeException or ImapProtocolException or ImapCommandException or System.Net.Http.HttpRequestException)
         {
-            return $"Couldn't reach {config.Server}:{config.Port} ({ex.Message}).";
+            return $"Couldn't reach {host}:{port} ({ex.Message}).";
         }
         _ = Task.Run(() => RunAsync(_cts.Token));
         return null;
@@ -127,9 +128,8 @@ internal sealed class ImapMailProvider(MailConfig config, string password) : IMa
         var client = new ImapClient();
         try
         {
-            await client.ConnectAsync(config.Server, config.Port, config.Ssl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTlsWhenAvailable, ct);
-            // TODO: OAuth — Gmail/Outlook XOAUTH2 via SaslMechanismOAuth2 instead of an app password.
-            await client.AuthenticateAsync(config.Username, password, ct);
+            await client.ConnectAsync(host, port, ssl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTlsWhenAvailable, ct);
+            await authenticate(client, ct); // app password, or XOAUTH2 with a fresh token (Sign in with Google / Microsoft)
             return client;
         }
         catch
@@ -154,7 +154,7 @@ internal sealed class ImapMailProvider(MailConfig config, string password) : IMa
                 {
                     await ReportAsync(inbox, ct);
                     if (client.Capabilities.HasFlag(ImapCapabilities.Idle)) await IdleAsync(client, inbox, ct);
-                    else await Task.Delay(TimeSpan.FromSeconds(config.PollSeconds), ct);
+                    else await Task.Delay(TimeSpan.FromSeconds(pollSeconds), ct);
                 }
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { return; }

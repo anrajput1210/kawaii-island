@@ -21,9 +21,6 @@ internal sealed class AppBarService : IDisposable
     /// <summary>Reserved strip in physical pixels, raised after every (re)dock.</summary>
     public event Action<Rect, MonitorInfo>? Docked;
 
-    /// <summary>ABN_FULLSCREENAPP: a fullscreen app opened (true) or closed (false) on this monitor. Used in Phase 6.</summary>
-    public event Action<bool>? FullscreenChanged;
-
     public bool IsDocked => _registered;
 
     /// <summary>Registers (if needed) and reserves a strip of <paramref name="thicknessPx"/> on the edge of the monitor.</summary>
@@ -99,9 +96,6 @@ internal sealed class AppBarService : IDisposable
                 if (Placement.Strip(ToRect(abd.rc), d.Edge, d.Thickness) != _lastStrip)
                     Dock(d.Monitor, d.Edge, d.Thickness);
                 break;
-            case ABN_FULLSCREENAPP:
-                FullscreenChanged?.Invoke(lParam != 0);
-                break;
         }
         handled = true;
         return 0;
@@ -113,7 +107,7 @@ internal sealed class AppBarService : IDisposable
 
     // ---- interop ----
     private const uint ABM_NEW = 0, ABM_REMOVE = 1, ABM_QUERYPOS = 2, ABM_SETPOS = 3;
-    private const int ABN_POSCHANGED = 1, ABN_FULLSCREENAPP = 2;
+    private const int ABN_POSCHANGED = 1;
     private const uint ABE_LEFT = 0, ABE_TOP = 1, ABE_RIGHT = 2, ABE_BOTTOM = 3;
     private const uint WS_POPUP = 0x80000000;
     private const int WS_EX_TOOLWINDOW = 0x80, WS_EX_NOACTIVATE = 0x08000000, WS_EX_TRANSPARENT = 0x20, WS_EX_LAYERED = 0x80000;

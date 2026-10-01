@@ -59,10 +59,10 @@ public enum ClaudeSettings {
             }
             settings["hooks"] = hooks.isEmpty ? nil : hooks
         }
-        if isOurs(settings["statusLine"] as Any) { settings["statusLine"] = nil }
+        if let line = settings["statusLine"], isOurs(line) { settings["statusLine"] = nil }
     }
 
-    public static func isInstalled(_ settings: [String: Any]) -> Bool { isOurs(settings["hooks"] as Any) }
+    public static func isInstalled(_ settings: [String: Any]) -> Bool { settings["hooks"].map(isOurs) ?? false }
 
     /// Reads, edits and atomically rewrites the real file (backup kept before installing).
     @discardableResult
@@ -78,14 +78,15 @@ public enum ClaudeSettings {
         }
         var line = false
         if enable { line = install(&settings, port: port) } else { uninstall(&settings) }
-        let out = try JSONSerialization.data(withJSONObject: settings, options: [.prettyPrinted, .sortedKeys])
+        let out = try JSONSerialization.data(withJSONObject: settings, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
         try out.write(to: url, options: .atomic)
         return line
     }
 
     static func isOurs(_ node: Any) -> Bool {
-        guard JSONSerialization.isValidJSONObject(node), let d = try? JSONSerialization.data(withJSONObject: node),
-              let s = String(data: d, encoding: .utf8) else { return (node as? String)?.contains(marker) == true }
-        return s.replacingOccurrences(of: "\/", with: "/").contains(marker)
+        if let s = node as? String { return s.contains(marker) }
+        guard JSONSerialization.isValidJSONObject(node),
+              let d = try? JSONSerialization.data(withJSONObject: node, options: .withoutEscapingSlashes) else { return false }
+        return String(decoding: d, as: UTF8.self).contains(marker)
     }
 }

@@ -7,6 +7,11 @@ import SwiftUI
 @main
 enum Main {
     @MainActor static func main() {
+        let args = CommandLine.arguments
+        // `kawaii-island uninstall` (npm): remove exactly our Claude Code hooks, then quit.
+        if args.contains("--uninstall-hooks") { _ = try? ClaudeSettings.apply(false, port: 47811); return }
+        // `kawaii-island install` (npm): open at login by default, like "Start with Windows".
+        if args.contains("--enable-login") { try? SMAppService.mainApp.register() }
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate

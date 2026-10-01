@@ -36,3 +36,8 @@ jobs:
         with:
           name: KawaiiIsland-macOS
           path: macos/build/KawaiiIsland.dmg
+      # The npm package carries this zip (installer/npm/scripts/build.mjs downloads it).
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KawaiiIsland-macos-zip
+          path: macos/build/KawaiiIsland-macos.zip

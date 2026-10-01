@@ -1,19 +1,45 @@
 {
   "name": "kawaii-island",
   "version": "0.1.0",
-  "description": "A cute Dynamic Island for Windows 11: music, notifications, app shortcuts and your AI coding agents, with a mascot.",
+  "description": "A cute Dynamic Island for Windows and Mac: music, notifications, app shortcuts and your AI coding agents, with 20 mascots.",
   "license": "MIT",
   "homepage": "https://github.com/anrajput1210/kawaii-island",
-  "repository": { "type": "git", "url": "git+https://github.com/anrajput1210/kawaii-island.git" },
-  "keywords": ["dynamic-island", "windows", "windows-11", "claude-code", "codex", "ai-agents", "mascot"],
-  "os": ["win32"],
-  "cpu": ["x64", "arm64"],
-  "engines": { "node": ">=18" },
-  "bin": { "kawaii-island": "bin/kawaii-island.js" },
-  "files": ["bin", "dist"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anrajput1210/kawaii-island.git"
+  },
+  "keywords": [
+    "ai-agents",
+    "claude-code",
+    "codex",
+    "dynamic-island",
+    "macos",
+    "mascot",
+    "notch",
+    "windows",
+    "windows-11"
+  ],
+  "os": [
+    "win32",
+    "darwin"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "kawaii-island": "bin/kawaii-island.js"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
   "scripts": {
     "build": "node scripts/build.mjs",
-    "prepack": "node scripts/build.mjs",
+    "prepack": "node scripts/build.mjs --release",
     "postinstall": "node bin/kawaii-island.js postinstall"
   }
 }

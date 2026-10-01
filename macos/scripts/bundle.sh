@@ -9,6 +9,7 @@ APP="build/dmg/Kawaii Island.app"
 cp "$BIN" "$APP/Contents/MacOS/KawaiiIsland"
 cp Info.plist "$APP/Contents/Info.plist"
 codesign --force --deep -s - "$APP"   # ad-hoc; Developer ID signing + notarization later
+ditto -c -k --keepParent "$APP" build/KawaiiIsland-macos.zip   # for the npm package
 ln -s /Applications build/dmg/Applications
 hdiutil create -volname "Kawaii Island" -srcfolder build/dmg -ov -format UDZO build/KawaiiIsland.dmg
 echo "built macos/build/KawaiiIsland.dmg"

@@ -1,14 +1,17 @@
 #!/usr/bin/env node
-// Kawaii Island for Windows, installed with npm (no .NET needed: dist/ holds a self-contained KawaiiIsland.exe).
+// Kawaii Island for Windows and macOS, installed with npm. dist/ holds a self-contained KawaiiIsland.exe (no .NET
+// needed) and KawaiiIsland-macos.zip (universal "Kawaii Island.app").
 //
 //   npm i -g kawaii-island            installs per-user and starts it (also: npx kawaii-island)
 //   kawaii-island [install|start|stop|uninstall [--purge]|status]
 //   kawaii-island event --agent "Gemini CLI" --state working --detail "npm test" [--session id] [--cwd dir]
 //   kawaii-island ask "Run the migration?" --agent Aider     exit 0 = allow, 1 = deny, 2 = no answer / island off
 //
-// Everything stays on this PC: the app lives in %LOCALAPPDATA%\Programs\KawaiiIsland, settings in %LOCALAPPDATA%\KawaiiIsland.
+// Everything stays on this computer. Windows: app in %LOCALAPPDATA%\Programs\KawaiiIsland, settings in %LOCALAPPDATA%\KawaiiIsland.
+// macOS: ~/Applications/Kawaii Island.app, settings in ~/Library/Application Support/KawaiiIsland.
 'use strict';
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { execFileSync, spawn } = require('node:child_process');
 
@@ -21,22 +24,44 @@ const dataDir = path.join(local, 'KawaiiIsland');
 const shortcut = path.join(process.env.APPDATA || '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Kawaii Island.lnk');
 const RUN_KEY = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run';
 
+// macOS
+const MAC = process.platform === 'darwin';
+const macApp = path.join(os.homedir(), 'Applications', 'Kawaii Island.app');
+const macBinary = path.join(macApp, 'Contents', 'MacOS', 'KawaiiIsland');
+const macZip = path.join(__dirname, '..', 'dist', 'KawaiiIsland-macos.zip');
+const macData = path.join(os.homedir(), 'Library', 'Application Support', 'KawaiiIsland');
+const bundled = () => fs.existsSync(MAC ? macZip : bundledExe);
+const installed = () => fs.existsSync(MAC ? macApp : installedExe);
+
 const [command = '', ...rest] = process.argv.slice(2);
 
 function quiet(file, args) {
   try { execFileSync(file, args, { stdio: 'ignore', windowsHide: true }); return true; } catch { return false; }
 }
 
-const stop = () => quiet('taskkill', ['/IM', EXE, '/F']);
+const stop = () => MAC ? quiet('pkill', ['-x', 'KawaiiIsland']) : quiet('taskkill', ['/IM', EXE, '/F']);
 
-function start() {
-  if (!fs.existsSync(installedExe)) return fail('Kawaii Island is not installed. Run: kawaii-island install');
-  spawn(installedExe, [], { detached: true, stdio: 'ignore', windowsHide: false }).unref();
-  console.log('Kawaii Island is running (look at the top of your screen; Ctrl+Alt+I opens it).');
+function start(args = []) {
+  if (!installed()) return fail('Kawaii Island is not installed. Run: kawaii-island install');
+  if (MAC) spawn('open', [macApp, ...(args.length ? ['--args', ...args] : [])], { detached: true, stdio: 'ignore' }).unref();
+  else spawn(installedExe, [], { detached: true, stdio: 'ignore', windowsHide: false }).unref();
+  console.log(`Kawaii Island is running (look at the top of your screen; ${MAC ? 'Control+Option+I' : 'Ctrl+Alt+I'} opens it).`);
+}
+
+function installMac() {
+  if (!fs.existsSync(macZip)) return fail('This package has no macOS build (dist/KawaiiIsland-macos.zip).');
+  stop();
+  fs.rmSync(macApp, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(macApp), { recursive: true });
+  execFileSync('ditto', ['-x', '-k', macZip, path.dirname(macApp)]); // keeps the app's signature and permissions
+  quiet('xattr', ['-dr', 'com.apple.quarantine', macApp]);
+  console.log(`Installed to ${macApp}. It opens at login; turn that off from the island's menu bar icon.`);
+  start(['--enable-login']);
 }
 
 function install({ launch = true } = {}) {
-  if (process.platform !== 'win32') return fail('Kawaii Island for npm is Windows-only for now.');
+  if (MAC) return installMac();
+  if (process.platform !== 'win32') return fail('Kawaii Island runs on Windows and macOS.');
   if (!fs.existsSync(bundledExe)) return fail('This package has no app build (dist/KawaiiIsland.exe). Install it from npm, or run "npm run build" in installer/npm.');
   stop(); // replacing a running exe fails on Windows
   fs.mkdirSync(installDir, { recursive: true });
@@ -55,6 +80,12 @@ function install({ launch = true } = {}) {
 function uninstall() {
   const purge = rest.includes('--purge');
   stop();
+  if (MAC) {
+    if (fs.existsSync(macBinary)) quiet(macBinary, ['--uninstall-hooks']); // removes our Claude Code hooks, if any
+    fs.rmSync(macApp, { recursive: true, force: true });
+    if (purge) fs.rmSync(macData, { recursive: true, force: true });
+    return console.log(purge ? 'Kawaii Island and its settings were removed.' : `Kawaii Island was removed. Your settings stay in ${macData} (use --purge to delete them).`);
+  }
   if (fs.existsSync(installedExe)) quiet(installedExe, ['--uninstall-hooks']); // removes our Claude Code hooks, if any
   quiet('reg', ['delete', RUN_KEY, '/v', 'KawaiiIsland', '/f']);
   fs.rmSync(shortcut, { force: true });
@@ -64,6 +95,9 @@ function uninstall() {
 }
 
 function status() {
+  if (MAC) {
+    return console.log(`installed: ${installed() ? macApp : 'no'}\nrunning:   ${quiet('pgrep', ['-x', 'KawaiiIsland']) ? 'yes' : 'no'}\nport:      ${port()}`);
+  }
   const running = quiet('powershell', ['-NoProfile', '-Command', `if (-not (Get-Process ${EXE.replace('.exe', '')} -ErrorAction SilentlyContinue)) { exit 1 }`]);
   console.log(`installed: ${fs.existsSync(installedExe) ? installedExe : 'no'}\nrunning:   ${running ? 'yes' : 'no'}\nport:      ${port()}`);
 }
@@ -71,6 +105,9 @@ function status() {
 // ---------- agent events (any agentic tool can call these from its hooks) ----------
 
 function port() {
+  if (MAC) {
+    try { return JSON.parse(fs.readFileSync(path.join(macData, 'config.json'), 'utf8')).codePort || 47811; } catch { return 47811; }
+  }
   try {
     const cfg = JSON.parse(fs.readFileSync(path.join(dataDir, 'config.json'), 'utf8').replace(/^﻿/, ''));
     return cfg?.modules?.code?.port || 47811;
@@ -119,10 +156,10 @@ function fail(message) { console.error(message); process.exitCode = 1; }
 switch (command) {
   case 'postinstall':
     // `npm i -g kawaii-island` installs and starts the app; a local (project) install only prints how.
-    if (process.env.npm_config_global === 'true' && fs.existsSync(bundledExe)) install();
+    if (process.env.npm_config_global === 'true' && bundled()) install();
     else console.log('Run "npx kawaii-island install" to install Kawaii Island.');
     break;
-  case '': fs.existsSync(installedExe) ? start() : install(); break;
+  case '': installed() ? start() : install(); break;
   case 'install': install(); break;
   case 'start': start(); break;
   case 'stop': console.log(stop() ? 'Stopped.' : 'Kawaii Island was not running.'); break;

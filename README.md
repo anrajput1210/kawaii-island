@@ -30,16 +30,33 @@ A cute, customizable **Dynamic Island for Windows 11 and macOS**. A small pill d
 - Follows the [design guidelines](#design-guidelines): glanceable, quiet by default, message text hidden until you allow previews, height that fits its content, honours Windows "Animation effects".
 - **AI agent companion:** live status of Claude Code, Codex, Gemini CLI, Cursor or any agent that can run a hook (working, which tool, needs you, done), Allow / Deny on the island, plus context and plan usage for Claude Code. See [AI agents](#ai-agents-claude-code-codex-gemini-cli-cursor-aider).
 
-## Install (Windows 10 2004+ / Windows 11 / macOS 13+)
+## Install
+
+### Windows (10 2004+ / 11)
+
+**Download:** [KawaiiIsland-Windows.exe](https://github.com/anrajput1210/kawaii-island/releases/latest/download/KawaiiIsland-Windows.exe) from the [latest release](https://github.com/anrajput1210/kawaii-island/releases/latest) and run it (no install, no .NET needed). Or with npm:
 
 ```powershell
 npm install -g kawaii-island
 kawaii-island install   # newer npm skips install scripts; this does the setup either way
 ```
 
-That's it: no .NET needed (the package ships a self-contained app). It installs per-user to `%LOCALAPPDATA%\Programs\KawaiiIsland`, adds **Kawaii Island** to the Start menu, starts with Windows (turn that off in Settings → General) and launches. Other commands:
+npm installs it per-user to `%LOCALAPPDATA%\Programs\KawaiiIsland`, adds **Kawaii Island** to the Start menu, starts it with Windows (turn that off in Settings → General) and launches it.
 
-```powershell
+### Mac (macOS 13+, Apple silicon and Intel)
+
+**Download:** [KawaiiIsland-macOS.dmg](https://github.com/anrajput1210/kawaii-island/releases/latest/download/KawaiiIsland-macOS.dmg) from the [latest release](https://github.com/anrajput1210/kawaii-island/releases/latest), open it and drag **Kawaii Island** to **Applications**. Or with npm:
+
+```bash
+npm install -g kawaii-island
+kawaii-island install   # puts Kawaii Island.app in ~/Applications, opens it at login, and launches it
+```
+
+The app isn't notarized yet, so the first time you open a downloaded copy macOS says it can't check it. Right-click the app → **Open** → **Open**, or run `xattr -dr com.apple.quarantine "/Applications/Kawaii Island.app"` once. (The npm install doesn't need this.) On a MacBook with a notch the island sits right on the notch; otherwise it's a regular island at the top centre. **Control+Option+I** opens it.
+
+### Both: other commands
+
+```bash
 npx kawaii-island                  # install if needed, then start
 kawaii-island status | start | stop
 kawaii-island uninstall [--purge]  # --purge also deletes your settings
@@ -89,7 +106,7 @@ Build the npm package (maintainers; needs the .NET 8 SDK): `cd installer/npm && 
 
 ## macOS
 
-The Mac app is the iPhone Dynamic Island, grown out of the MacBook's camera notch: on a Mac with a notch it sits flush around the camera; on Macs and displays without one it's a regular island centred at the top. Native Swift, macOS 13+, Apple silicon and Intel. Install it with the same `npm install -g kawaii-island` + `kawaii-island install` (it goes to `~/Applications` and opens at login), or download the DMG from the latest **build** run's artifacts.
+The Mac app is the iPhone Dynamic Island, grown out of the MacBook's camera notch: on a Mac with a notch it sits flush around the camera; on Macs and displays without one it's a regular island centred at the top. Native Swift, macOS 13+, Apple silicon and Intel. Install it with the same `npm install -g kawaii-island` + `kawaii-island install` (it goes to `~/Applications` and opens at login), or download the DMG from the [latest release](#mac-macos-13-apple-silicon-and-intel).
 
 - **Compact** (content on either side of the camera), **expanded** (click; hover optional), and the detached **minimal** bubble when two activities run.
 - **Calls:** FaceTime (including iPhone calls relayed to the Mac), Zoom, Teams, WhatsApp, Discord: duration, video indicator, Mute, Open, End.

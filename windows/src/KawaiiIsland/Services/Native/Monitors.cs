@@ -41,6 +41,9 @@ internal static class Monitors
     public static void MoveWindow(nint hwnd, double x, double y) =>
         SetWindowPos(hwnd, 0, (int)Math.Round(x), (int)Math.Round(y), 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 
+    public static void SetBounds(nint hwnd, Rect r) =>
+        SetWindowPos(hwnd, 0, (int)r.X, (int)r.Y, (int)r.Width, (int)r.Height, SWP_NOZORDER | SWP_NOACTIVATE);
+
     private static MonitorInfo? Info(nint hMonitor)
     {
         var mi = new MONITORINFOEX { cbSize = Marshal.SizeOf<MONITORINFOEX>() };

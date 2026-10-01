@@ -51,10 +51,33 @@ public partial class App : Application
     private TaskbarIcon BuildTray()
     {
         var menu = new ContextMenu();
-        menu.Items.Add(MenuItem("Show / hide", () => _island!.ToggleVisible()));
-        var unlock = new MenuItem { Header = "Unlock to drag", IsCheckable = true, IsChecked = !_island!.Locked };
-        unlock.Click += (_, _) => _island.SetLocked(!unlock.IsChecked); // IsChecked already flipped by the click
+        var island = _island!;
+        menu.Items.Add(MenuItem("Show / hide", island.ToggleVisible));
+        menu.Items.Add(new Separator());
+
+        // Checkable items flip IsChecked themselves before Click fires.
+        var appBar = new MenuItem { Header = "Reserve workspace (AppBar)", IsCheckable = true };
+        appBar.Click += (_, _) => island.SetAppBar(appBar.IsChecked);
+        var unlock = new MenuItem { Header = "Unlock to drag", IsCheckable = true };
+        unlock.Click += (_, _) => island.SetLocked(!unlock.IsChecked);
+        menu.Items.Add(appBar);
         menu.Items.Add(unlock);
+
+        var collapse = new MenuItem { Header = "Collapse after" };
+        foreach (var (label, seconds) in new[] { ("4 seconds", 4), ("10 seconds", 10), ("15 seconds", 15), ("30 seconds", 30), ("Never", 0) })
+        {
+            var item = new MenuItem { Header = label, Tag = seconds, IsCheckable = true };
+            item.Click += (_, _) => island.SetAutoCollapse(seconds);
+            collapse.Items.Add(item);
+        }
+        menu.Items.Add(collapse);
+
+        menu.Opened += (_, _) => // reflect current state every time the menu opens
+        {
+            appBar.IsChecked = island.AppBarEnabled;
+            unlock.IsChecked = !island.Locked;
+            foreach (MenuItem item in collapse.Items) item.IsChecked = (int)item.Tag == island.AutoCollapseSeconds;
+        };
         menu.Items.Add(new Separator());
         menu.Items.Add(MenuItem("Quit", Shutdown));
 

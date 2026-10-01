@@ -118,7 +118,7 @@ public sealed class AppConfig
 
         Appearance.Theme = OneOf(Appearance.Theme, "dark", "dark", "light", "auto");
         Appearance.Mascot = OneOf(Appearance.Mascot, DefaultMascot, Mascots);
-        Behavior.AutoCollapseSeconds = Math.Clamp(Behavior.AutoCollapseSeconds, 1, 60);
+        Behavior.AutoCollapseSeconds = Math.Clamp(Behavior.AutoCollapseSeconds, 0, 600); // 0 = never
         Modules.Mail.PollSeconds = Math.Clamp(Modules.Mail.PollSeconds, 15, 3600);
         Modules.Shortcuts.Max = Math.Clamp(Modules.Shortcuts.Max, 1, 24);
     }

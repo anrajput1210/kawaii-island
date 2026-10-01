@@ -36,7 +36,18 @@ public sealed class ClaudeSettingsTests
         Assert.True(ours["async"]!.GetValue<bool>());
         Assert.Contains("http://127.0.0.1:47811/kawaii/hook", ours["args"]!.ToJsonString());
         Assert.NotNull(s["hooks"]!["Stop"]);
-        Assert.NotNull(s["hooks"]!["PermissionRequest"]);
+        var ask = s["hooks"]!["PermissionRequest"]![0]!["hooks"]![0]!;
+        Assert.False(ask["async"]!.GetValue<bool>()); // must be synchronous to return a decision
+        Assert.Contains("/kawaii/permission", ask["args"]!.ToJsonString());
+    }
+
+    [Fact]
+    public void PermissionReply_allow_deny_or_fall_back_to_terminal()
+    {
+        Assert.Contains("\"behavior\":\"allow\"", ClaudeSettings.PermissionReply("allow"));
+        Assert.Contains("\"behavior\":\"deny\"", ClaudeSettings.PermissionReply("deny"));
+        Assert.Contains("PermissionRequest", ClaudeSettings.PermissionReply("deny"));
+        Assert.Equal("", ClaudeSettings.PermissionReply(null));
     }
 
     [Fact]

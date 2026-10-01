@@ -11,6 +11,8 @@ namespace KawaiiIsland.Services.ClaudeCode;
 /// line POST their JSON here via curl:
 ///   POST /kawaii/hook    → <see cref="Hook"/>   (empty reply: hook stdout can reach Claude's context, so say nothing)
 ///   POST /kawaii/status  → <see cref="Status"/> (reply text becomes Claude Code's status bar)
+///   POST /kawaii/permission → <see cref="Hook"/> + <see cref="Permission"/>: held open until the user answers on the
+///                             island; the reply is the hook's decision JSON ("" = ask in the terminal as usual)
 /// A raw TcpListener avoids HttpListener's URL-ACL/admin requirements on Windows.
 /// </summary>
 public sealed class HookServer(int port) : IDisposable
@@ -23,6 +25,8 @@ public sealed class HookServer(int port) : IDisposable
     public event Action<JsonElement>? Hook;
     /// <summary>Called on a thread-pool thread; returns the status-line text.</summary>
     public Func<JsonElement, string>? Status { get; set; }
+    /// <summary>Called on a thread-pool thread; completes with the PermissionRequest hook output.</summary>
+    public Func<JsonElement, Task<string>>? Permission { get; set; }
 
     /// <exception cref="SocketException">The port is already in use.</exception>
     public void Start()
@@ -61,6 +65,13 @@ public sealed class HookServer(int port) : IDisposable
                     case "/kawaii/status":
                         using (var doc = JsonDocument.Parse(body)) reply = Status?.Invoke(doc.RootElement.Clone()) ?? "";
                         break;
+                    case "/kawaii/permission":
+                        JsonElement request;
+                        using (var doc = JsonDocument.Parse(body)) request = doc.RootElement.Clone();
+                        Hook?.Invoke(request);
+                        reply = Permission is null ? "" : await Permission(request);
+                        await Respond(stream, "200 OK", reply, _cts.Token); // the 3 s budget is for reading only
+                        return;
                     default:
                         await Respond(stream, "404 Not Found", "", timeout.Token);
                         return;

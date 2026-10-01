@@ -44,6 +44,7 @@ public partial class IslandWindow : Window
     private bool _compact; // 280x40 "compact-active" size (spec §2) while something is going on
 
     private WindowConfig Win => _config.Current.Window;
+    private bool HasMascot => _config.Current.Appearance.Mascot != AppConfig.NoMascot;
     private MascotControl[] Mascots => [MascotSmall, MascotLarge, MascotTiny];
 
     public IslandWindow(ConfigService config)
@@ -109,14 +110,17 @@ public partial class IslandWindow : Window
     {
         Width = Win.ExpandedWidth + ShadowMargin;
         Height = Win.ExpandedHeight + ShadowMargin;
-        Pill.Width = Win.CollapsedWidth;
-        Pill.Height = Win.CollapsedHeight;
-        PillRadius = Win.CollapsedHeight / 2;
+        var (w, h) = RestSize;
+        Pill.Width = w;
+        Pill.Height = h;
+        PillRadius = h / 2;
         ExpandedPanel.Width = Win.ExpandedWidth;
         ExpandedPanel.Height = Win.ExpandedHeight;
         Opacity = Win.Opacity;
         foreach (var m in Mascots) m.Skin = _config.Current.Appearance.Mascot;
         PeekMascot.Skin = _config.Current.Appearance.Mascot;
+        MascotLarge.Visibility = PeekMascot.Visibility = Vis(HasMascot);
+        MascotTiny.Width = HasMascot ? 22 : 0;
         Outline.Visibility = Win.Locked ? Visibility.Collapsed : Visibility.Visible;
         ApplyAnchor();
     }
@@ -130,6 +134,7 @@ public partial class IslandWindow : Window
         SmallClock.Text = BigClock.Text;
         TickMusic();
         TickAlerts();
+        TickCodeFooter();
     }
 
     // ---------------- placement (physical pixels via Win32; see Services/Native) ----------------
@@ -180,7 +185,7 @@ public partial class IslandWindow : Window
     private Rect PillRect(Rect window, double scale)
     {
         var (h, v) = Anchor();
-        var size = new Size(Win.CollapsedWidth * scale, Win.CollapsedHeight * scale);
+        var size = new Size(RestSize.W * scale, RestSize.H * scale);
         var off = Placement.PillOffset(window.Size, size, h, v, Gap * scale);
         return new Rect(window.X + off.X, window.Y + off.Y, size.Width, size.Height);
     }
@@ -189,7 +194,7 @@ public partial class IslandWindow : Window
     private Point WindowFor(Point pill, Size window, double scale)
     {
         var (h, v) = Anchor();
-        var off = Placement.PillOffset(window, new Size(Win.CollapsedWidth * scale, Win.CollapsedHeight * scale), h, v, Gap * scale);
+        var off = Placement.PillOffset(window, new Size(RestSize.W * scale, RestSize.H * scale), h, v, Gap * scale);
         return new Point(pill.X - off.X, pill.Y - off.Y);
     }
 
@@ -204,7 +209,7 @@ public partial class IslandWindow : Window
         if (Win.AppBarEnabled)
         {
             bool horizontal = DockEdge is Edge.Top or Edge.Bottom;
-            double thickness = ((horizontal ? Win.CollapsedHeight : Win.CollapsedWidth) + 2 * Gap) * mon.Scale;
+            double thickness = ((horizontal ? RestSize.H : RestSize.W) + 2 * Gap) * mon.Scale;
             if (_autoHiding) // auto-hidden: same spot on the bare monitor edge, nothing reserved
             {
                 _appBar.Undock();
@@ -223,7 +228,7 @@ public partial class IslandWindow : Window
             return;
         }
         var saved = new Rect(mon.Work.X + Win.X * mon.Scale, mon.Work.Y + Win.Y * mon.Scale,
-                             Win.CollapsedWidth * mon.Scale, Win.CollapsedHeight * mon.Scale);
+                             RestSize.W * mon.Scale, RestSize.H * mon.Scale);
         var pos = WindowFor(Placement.ClampInto(saved, mon.Work), window.Size, mon.Scale);
         Monitors.MoveWindow(_hwnd, pos.X, pos.Y);
     }
@@ -231,7 +236,7 @@ public partial class IslandWindow : Window
     /// <summary>Strip reserved (or moved by the shell): put the pill inside it per edge + alignment.</summary>
     private void OnDocked(Rect strip, MonitorInfo mon)
     {
-        var pillSize = new Size(Win.CollapsedWidth * mon.Scale, Win.CollapsedHeight * mon.Scale);
+        var pillSize = new Size(RestSize.W * mon.Scale, RestSize.H * mon.Scale);
         var pill = Placement.PillInStrip(strip, DockEdge, Win.Alignment, pillSize, Gap * mon.Scale);
         var pos = WindowFor(pill, Monitors.WindowRect(_hwnd).Size, mon.Scale);
         Monitors.MoveWindow(_hwnd, pos.X, pos.Y);
@@ -380,6 +385,10 @@ public partial class IslandWindow : Window
         CollapsedPanel.Opacity = 1;
 
         ApplyConfig();
+        RenderCompact(); // side dock ⇄ top/bottom changes what the resting pill shows
+        Pill.BeginAnimation(WidthProperty, null);
+        Pill.BeginAnimation(HeightProperty, null);
+        BeginAnimation(PillRadiusProperty, null);
         var (w, h) = CollapsedSize();
         Pill.Width = w; Pill.Height = h; PillRadius = h / 2;
         PlaceIsland();
@@ -395,7 +404,14 @@ public partial class IslandWindow : Window
         BeginAnimation(PillRadiusProperty, new DoubleAnimation(radius, d) { EasingFunction = ease });
     }
 
-    private (double W, double H) CollapsedSize() => _compact ? (280, 40) : (Win.CollapsedWidth, Win.CollapsedHeight);
+    private (double W, double H) CollapsedSize() => _compact ? (280, 40) : RestSize;
+
+    /// <summary>Docked to the left/right edge: the resting island is a minimal 44 px circle (design guidelines'
+    /// "minimal" state), so the reserved side strip is 56 px instead of the full pill width.</summary>
+    private bool SideDocked => Win.AppBarEnabled && DockEdge is Edge.Left or Edge.Right;
+
+    private (double W, double H) RestSize => SideDocked ? (MinimalSize, MinimalSize) : (Win.CollapsedWidth, Win.CollapsedHeight);
+    private const double MinimalSize = 44;
 
     /// <summary>Switches the resting size between collapsed (180x36) and compact-active (280x40).</summary>
     private void SetCompact(bool compact)
@@ -409,7 +425,7 @@ public partial class IslandWindow : Window
     {
         _autoCollapse.Stop();
         int seconds = _config.Current.Behavior.AutoCollapseSeconds;
-        if (!_expanded || seconds == 0 || Pill.IsMouseOver) return;
+        if (!_expanded || seconds == 0 || Pill.IsMouseOver || _approval is not null) return;
         _autoCollapse.Interval = TimeSpan.FromSeconds(seconds);
         _autoCollapse.Start();
     }
@@ -474,8 +490,10 @@ public partial class IslandWindow : Window
     private void OnMascotPoked(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true; // poking the mascot doesn't expand/collapse the island
+        bool burst = _burst.Register(Environment.TickCount64);
+        if (!burst && _mood == "dizzy") return; // stay dizzy; the running timer still brings it back to normal
         _moodTimer.Stop();
-        if (_burst.Register(Environment.TickCount64))
+        if (burst)
         {
             SetMood("dizzy");
             foreach (var m in Mascots) m.Wobble(true);
@@ -483,7 +501,6 @@ public partial class IslandWindow : Window
         }
         else
         {
-            if (_mood == "dizzy") return; // stay dizzy until it wears off
             SetMood("annoyed");
             foreach (var m in Mascots) m.Squish();
             _moodTimer.Interval = TimeSpan.FromSeconds(1.2);

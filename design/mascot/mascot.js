@@ -57,10 +57,27 @@
       mouth: (ex, y) => calm(ex) ? ln(`M23 ${y} Q32 ${y+6} 41 ${y}`, 1.6) : null },
   };
 
-  function face(skin, ex = 'idle') {
+  // Coding / lock-in outfit: hoodie (hood frames the head, shoulders + drawstrings below) and nerdy glasses.
+  const HOOD = '#3B4A6B', HOOD_IN = '#26314A';
+  const hoodie = `<path d="M3 64 Q4 50 15 47 L49 47 Q60 50 61 64 Z" fill="${HOOD}"/><ellipse cx="32" cy="33" rx="30.5" ry="29" fill="${HOOD}"/><ellipse cx="32" cy="35" rx="26" ry="24.5" fill="${HOOD_IN}"/>`;
+  const strings = `${ln('M26 57 V62', 1.4, '#E8ECF5')}${ln('M38 57 V62', 1.4, '#E8ECF5')}`;
+  const lens = (x, y, paint) => `<rect x="${x}" y="${y-6.5}" width="15" height="13" rx="4.5" ${paint}/>`;
+  const glasses = y => [16.5, 32.5].map(x => lens(x, y, 'fill="#A8DCFF" opacity=".28"') + lens(x, y, `fill="none" stroke="${C.navy}" stroke-width="1.8"`)).join('') +
+    ln(`M31.5 ${y-1.5} Q32 ${y-2.6} 32.5 ${y-1.5}`, 1.6) + ln(`M16.5 ${y-2} L11 ${y-4}`, 1.6) + ln(`M47.5 ${y-2} L53 ${y-4}`, 1.6);
+
+  // A face in three layers so the app can slide the eyes toward the cursor: under (head), eyes, over (rest).
+  function layers(skin, ex = 'idle', outfit = '') {
     const s = SKINS[skin] || SKINS.kiko;
     const mouth = (s.mouth && s.mouth(ex, s.my)) || MOUTH[ex](s.my);
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">${s.back}${EYES[ex](s.ey)}${blush(s.by)}${mouth}${s.front || ''}${EXTRA[ex] || ''}</svg>`;
+    const code = outfit === 'code';
+    return { under: (code ? hoodie : '') + s.back, eyes: EYES[ex](s.ey),
+             over: blush(s.by) + mouth + (s.front || '') + (code ? strings + glasses(s.ey) : '') + (EXTRA[ex] || '') };
+  }
+  const svg = body => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">${body}</svg>`;
+
+  function face(skin, ex = 'idle', outfit = '') {
+    const l = layers(skin, ex, outfit);
+    return svg(l.under + l.eyes + l.over);
   }
 
   // File-drop form: the mascot turns into a little box. open = waiting for the drop, closed = swallowed.
@@ -74,6 +91,6 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true"><rect x="12" y="28" width="40" height="28" rx="3.5" fill="#E8B98A" stroke="#B9824F" stroke-width="1.4"/>${lid}${faceParts}${blush(48)}</svg>`;
   }
 
-  const api = { face, box, SKINS, EXPRESSIONS: Object.keys(EYES) };
+  const api = { face, layers, svg, box, SKINS, EXPRESSIONS: Object.keys(EYES), TRACKING: ['idle', 'surprised', 'wow'] };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.Mascot = api;
 })(this);

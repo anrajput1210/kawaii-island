@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Media;
 
 namespace KawaiiIsland;
 
@@ -32,14 +33,28 @@ public partial class IslandWindow
     {
         bool flash = !_codeBusy && _flash is not null;
         bool music = !_codeBusy && !flash && _media is { Playing: true };
-        SetCompact(_codeBusy || flash || music);
-        CodeLinePanel.Visibility = Vis(_codeBusy);
-        NotifLinePanel.Visibility = Vis(flash);
-        MusicLinePanel.Visibility = Eq.Visibility = Vis(music);
-        MascotSmall.Visibility = Vis(!music);
-        MascotSmall.HorizontalAlignment = flash ? HorizontalAlignment.Right : HorizontalAlignment.Left;
-        Clock.Visibility = Vis(!music && !flash);
+        bool minimal = SideDocked; // 44 px circle: one live thing (EQ while music plays, else the mascot)
+        SetCompact(!minimal && (_codeBusy || flash || music));
+        CollapsedPanel.Margin = new Thickness(minimal ? 0 : 11, 0, minimal ? 0 : 11, 0);
+        CodeLinePanel.Visibility = Vis(_codeBusy && !minimal);
+        NotifLinePanel.Visibility = Vis(flash && !minimal);
+        MusicLinePanel.Visibility = Vis(music && !minimal);
+        Eq.Visibility = Vis(music);
+        Eq.HorizontalAlignment = minimal ? HorizontalAlignment.Center : HorizontalAlignment.Right;
+        MascotSmall.Visibility = Vis(!music && HasMascot);
+        MascotSmall.HorizontalAlignment = minimal ? HorizontalAlignment.Center : flash ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+        Clock.Visibility = Vis(!minimal && !music && !flash);
+
+        // Key line takes the tint of the active content (design guidelines: "Shell").
+        Color? tint = _codeBusy ? CodeColor(_tracker.Active?.State)
+                    : flash ? AvatarColor(_flash!.App)
+                    : music ? MusicTint
+                    : CodeMode ? Accent()
+                    : null;
+        Pill.BorderBrush = new SolidColorBrush(tint is { } t ? Color.FromArgb(0xB0, t.R, t.G, t.B) : Color.FromArgb(0x26, 0x80, 0x80, 0x80));
     }
+
+    private static readonly Color MusicTint = Color.FromRgb(0x30, 0xD1, 0x58);
 
     private void RenderExpanded()
     {

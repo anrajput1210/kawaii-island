@@ -15,6 +15,23 @@ public static class ClaudeSettings
 {
     public const string Marker = "/kawaii/";
 
+    /// <summary>How long the island waits for Allow/Deny before handing the question back to the terminal.</summary>
+    public const int ApprovalSeconds = 120;
+
+    /// <summary>PermissionRequest hook output for "allow"/"deny"; null (no answer) → "" so Claude Code asks as usual.</summary>
+    public static string PermissionReply(string? behavior) => behavior is "allow" or "deny"
+        ? new JsonObject
+        {
+            ["hookSpecificOutput"] = new JsonObject
+            {
+                ["hookEventName"] = "PermissionRequest",
+                ["decision"] = behavior == "deny"
+                    ? new JsonObject { ["behavior"] = "deny", ["message"] = "Denied from Kawaii Island" }
+                    : new JsonObject { ["behavior"] = "allow" },
+            },
+        }.ToJsonString()
+        : "";
+
     private static readonly string[] Events =
         ["SessionStart", "SessionEnd", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure",
          "PermissionRequest", "Notification", "Stop"];
@@ -31,16 +48,19 @@ public static class ClaudeSettings
         foreach (var ev in Events)
         {
             var groups = hooks[ev] as JsonArray ?? (JsonArray)(hooks[ev] = new JsonArray());
+            // PermissionRequest waits (synchronously) for Allow/Deny on the island. If the island isn't running,
+            // curl fails at once with no output and Claude Code shows its normal prompt.
+            bool ask = ev == "PermissionRequest";
             groups.Add(new JsonObject
             {
                 ["hooks"] = new JsonArray(new JsonObject
                 {
                     ["type"] = "command",
                     ["command"] = "curl",
-                    ["args"] = new JsonArray("-s", "-m", "2", "-H", "Content-Type: application/json",
-                                             "--data-binary", "@-", $"http://127.0.0.1:{port}{Marker}hook"),
-                    ["async"] = true,
-                    ["timeout"] = 5,
+                    ["args"] = new JsonArray("-s", "-m", ask ? $"{ApprovalSeconds + 5}" : "2", "-H", "Content-Type: application/json",
+                                             "--data-binary", "@-", $"http://127.0.0.1:{port}{Marker}{(ask ? "permission" : "hook")}"),
+                    ["async"] = !ask,
+                    ["timeout"] = ask ? ApprovalSeconds + 10 : 5,
                 }),
             });
         }

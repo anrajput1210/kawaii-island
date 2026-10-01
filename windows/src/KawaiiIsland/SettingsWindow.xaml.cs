@@ -90,12 +90,17 @@ public partial class SettingsWindow : Window
         }
         Switch(NotifyPanel, "Do not disturb", "New notifications still show in the pill but don't open the island.",
                notify.Dnd, Island.SetDnd);
+        Switch(NotifyPanel, "Show message previews", "Off: the island shows only who it's from. People nearby can see your screen.",
+               notify.ShowPreview, on => { notify.ShowPreview = on; _app.Config.SaveSoon(); });
         Field(NotifyPanel, "Muted apps", MutedApps());
 
         CodePanel.Children.Clear();
         Switch(CodePanel, "Code mode (Claude Code)",
                $"Shows what Claude Code is doing, context used and plan usage left. Adds hooks to {ClaudeSettings.SettingsPath}; turning it off removes them.",
                Island.CodeMode, on => { _app.SetCodeMode(on); Later(Reload); });
+        Switch(CodePanel, "Approve from the island",
+               "Permission prompts show Allow / Deny on the island. Unanswered after 2 minutes, they go back to the terminal. Turn Code mode off and on once to update the hooks.",
+               C.Modules.Code.Approvals, on => { C.Modules.Code.Approvals = on; _app.Config.SaveSoon(); });
 
         Footer.Text = $"Saved on this PC in {_app.Config.Directory}";
     }
@@ -236,17 +241,24 @@ public partial class SettingsWindow : Window
     private FrameworkElement MascotPicker()
     {
         var row = new WrapPanel();
-        foreach (var key in AppConfig.Mascots)
+        foreach (var key in (string[])[.. AppConfig.Mascots, AppConfig.CustomMascot, AppConfig.NoMascot])
         {
+            bool custom = key == AppConfig.CustomMascot;
+            object face = key == AppConfig.NoMascot ? Label("Off", 12, "IslandMuted", bold: true)
+                        : custom && !System.IO.File.Exists(AppConfig.CustomMascotPath) ? Label("+ Yours", 12, "IslandMuted", bold: true)
+                        : new Image { Width = 38, Height = 38, Source = MascotControl.Art(key, "idle") };
+            if (face is TextBlock t) { t.Width = 38; t.Height = 38; t.TextAlignment = TextAlignment.Center; t.Padding = new Thickness(0, 11, 0, 0); }
             var rb = new RadioButton
             {
-                Content = new Image { Width = 38, Height = 38, Source = MascotControl.Art(key, "idle") },
+                Content = face,
                 GroupName = "mascot", Style = (Style)FindResource("Pick"), ToolTip = App.MascotName(key),
                 IsChecked = key == C.Appearance.Mascot,
             };
             AutomationProperties.SetName(rb, App.MascotName(key));
+            if (custom) rb.PreviewMouseLeftButtonUp += (_, _) => Later(PickCustomMascot); // click again to replace the picture
             rb.Checked += (_, _) =>
             {
+                if (custom && !System.IO.File.Exists(AppConfig.CustomMascotPath)) return; // PickCustomMascot sets it once chosen
                 C.Appearance.Mascot = key;
                 HeaderMascot.Source = MascotControl.Art(key, "happy");
                 Changed();
@@ -254,6 +266,27 @@ public partial class SettingsWindow : Window
             row.Children.Add(rb);
         }
         return row;
+    }
+
+    /// <summary>Copies the chosen picture into the app's local folder so the mascot survives the original moving.</summary>
+    private void PickCustomMascot()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog { Title = "Choose your mascot", Filter = "Pictures|*.png;*.jpg;*.jpeg;*.bmp;*.gif" };
+        if (dialog.ShowDialog(this) != true) { Reload(); return; }
+        try
+        {
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(AppConfig.CustomMascotPath)!);
+            System.IO.File.Copy(dialog.FileName, AppConfig.CustomMascotPath, overwrite: true);
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show(this, "Couldn't use that picture: " + ex.Message, "Kawaii Island");
+            return;
+        }
+        MascotControl.ReloadCustom();
+        C.Appearance.Mascot = AppConfig.CustomMascot;
+        _app.SettingsChanged();
+        Reload();
     }
 
     private static TextBlock Label(string text, double size, string brushKey, bool bold = false, Thickness margin = default)

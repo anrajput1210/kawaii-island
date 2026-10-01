@@ -16,6 +16,16 @@ internal static partial class Win32
     [LibraryImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
     private static partial nint SetWindowLongPtr(nint hWnd, int nIndex, nint dwNewLong);
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT { public int X, Y; }
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetCursorPos(out POINT p);
+
+    /// <summary>Mouse position in physical screen pixels (works anywhere on screen, not just over our window).</summary>
+    public static System.Windows.Point CursorPos() => GetCursorPos(out var p) ? new(p.X, p.Y) : new(double.NaN, double.NaN);
+
     /// <summary>Marks the window as a non-activating tool window.</summary>
     public static void MakeToolWindow(nint hwnd)
     {

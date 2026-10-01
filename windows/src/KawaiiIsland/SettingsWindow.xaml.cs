@@ -26,12 +26,38 @@ public partial class SettingsWindow : Window
     private AppConfig C => _app.Config.Current;
     private IslandWindow Island => _app.Island;
 
+    private static string _lastPage = "General"; // reopening Settings returns to the page you left
+
+    private (RadioButton Nav, StackPanel Page, string Caption)[] Pages => [
+        (NavGeneral, PageGeneral, "Startup, keyboard shortcut, collapsing and which modules are on."),
+        (NavPosition, PagePosition, "Where the island lives and how it gets out of the way."),
+        (NavAppearance, PageAppearance, "Theme, accent colour, mascot and the island's size."),
+        (NavNotifications, PageNotifications, "Windows notifications mirrored on the island. Kept in memory on this PC only."),
+        (NavMail, PageMail, "Unread count and your latest messages. Headers only, never bodies."),
+        (NavAgents, PageAgents, "Follow Claude Code, Codex, Gemini CLI, Cursor or any agent that can call a hook."),
+        (NavAbout, PageAbout, "Version, where your data lives, and logs."),
+    ];
+
     public SettingsWindow(App app)
     {
         _app = app;
         InitializeComponent();
+        foreach (var (nav, page, caption) in Pages)
+            nav.Checked += (_, _) => ShowPage(nav, page, caption);
+        AboutVersion.Text = $"Kawaii Island {typeof(App).Assembly.GetName().Version?.ToString(3)}";
         Reload();
+        (Pages.FirstOrDefault(p => (string)p.Nav.Content == _lastPage).Nav ?? NavGeneral).IsChecked = true;
         KeyDown += (_, e) => { if (e.Key == Key.Escape) Close(); };
+        SourceInitialized += (_, _) => KawaiiIsland.Services.Native.Win32.UseDarkTitleBar(
+            new System.Windows.Interop.WindowInteropHelper(this).Handle, ((SolidColorBrush)FindResource("SettingsBackground")).Color.R < 128);
+    }
+
+    private void ShowPage(RadioButton nav, StackPanel page, string caption)
+    {
+        foreach (var (_, p, _) in Pages) p.Visibility = p == page ? Visibility.Visible : Visibility.Collapsed;
+        PageTitle.Text = _lastPage = (string)nav.Content;
+        PageCaption.Text = caption;
+        PageScroll.ScrollToTop();
     }
 
     /// <summary>Rebuilds every row from the current config (called after changes made elsewhere, e.g. the menus).</summary>
@@ -85,7 +111,7 @@ public partial class SettingsWindow : Window
         hotkey.KeyDown += (_, e) => { if (e.Key == Key.Enter) ApplyHotkey(); };
         hotkey.LostFocus += (_, _) => { if (hotkey.Text.Trim() != C.Behavior.Hotkey) ApplyHotkey(); };
         var hotkeyRow = new StackPanel { Children = { hotkey, hotkeyNote } };
-        Field(BehaviorPanel, "Keyboard shortcut", hotkeyRow);
+        Field(BehaviorPanel, "Keyboard shortcut", hotkeyRow, below: true);
         Switch(BehaviorPanel, "App shortcuts", "Your pinned apps on the island. Add with + or drop files on the island; right-click an app to rename or remove it.",
                C.Modules.Shortcuts.Enabled, Island.SetShortcutsEnabled);
         Field(BehaviorPanel, "Max pinned apps", Segments([("4", "4"), ("6", "6"), ("8", "8"), ("12", "12")], C.Modules.Shortcuts.Max.ToString(),
@@ -97,7 +123,7 @@ public partial class SettingsWindow : Window
         Field(AppearancePanel, "Theme", Segments([("Dark", "dark"), ("Light", "light"), ("Auto", "auto")], C.Appearance.Theme,
                v => { C.Appearance.Theme = v; _app.ApplyTheme(); _app.Config.SaveSoon(); }));
         Field(AppearancePanel, "Accent", Swatches());
-        Field(AppearancePanel, "Mascot", MascotPicker());
+        Field(AppearancePanel, "Mascot", MascotPicker(), below: true);
 
         NotifyPanel.Children.Clear();
         var notify = C.Modules.Notifications;
@@ -114,17 +140,27 @@ public partial class SettingsWindow : Window
                notify.Dnd, Island.SetDnd);
         Switch(NotifyPanel, "Show message previews", "Off: the island shows only who it's from. People nearby can see your screen.",
                notify.ShowPreview, on => { notify.ShowPreview = on; _app.Config.SaveSoon(); });
-        Field(NotifyPanel, "Muted apps", MutedApps());
+        Field(NotifyPanel, "Muted apps", MutedApps(), below: true);
 
         BuildMail();
 
         CodePanel.Children.Clear();
-        Switch(CodePanel, "Code mode (Claude Code)",
-               $"Shows what Claude Code is doing, context used and plan usage left. Adds hooks to {ClaudeSettings.SettingsPath}; turning it off removes them.",
+        var code = C.Modules.Code;
+        Switch(CodePanel, "Coding mode", "Listens on this PC for agent activity, puts the mascot in its hoodie and keeps alerts quiet. Also the </> button on the island.",
                Island.CodeMode, on => { _app.SetCodeMode(on); Later(Reload); });
+        Switch(CodePanel, "Claude Code", $"Live status, context and plan usage, Allow / Deny on the island. Adds hooks to {ClaudeSettings.SettingsPath}; off removes them.",
+               code.ClaudeHooks, on => { _app.SetClaudeHooks(on); Later(Reload); });
         Switch(CodePanel, "Approve from the island",
-               "Permission prompts show Allow / Deny on the island. Unanswered after 2 minutes, they go back to the terminal. Turn Code mode off and on once to update the hooks.",
-               C.Modules.Code.Approvals, on => { C.Modules.Code.Approvals = on; _app.Config.SaveSoon(); });
+               "Permission prompts show Allow / Deny on the island. Unanswered after 2 minutes, they go back to the terminal.",
+               code.Approvals, on => { code.Approvals = on; _app.Config.SaveSoon(); });
+        string url = $"http://127.0.0.1:{code.Port}/kawaii";
+        Field(CodePanel, "Codex CLI · add to ~/.codex/config.toml", Snippet(
+            $"notify = [\"curl\", \"-s\", \"-m\", \"2\", \"-H\", \"Content-Type: application/json\", \"{url}/codex\", \"--data-binary\"]"), below: true);
+        Field(CodePanel, "Any agent (Gemini CLI, Cursor, Aider, your scripts…) · POST an event from its hooks", Snippet(
+            $"curl -s -m 2 {url}/event -H \"Content-Type: application/json\" -d \"{{\\\"agent\\\":\\\"Gemini CLI\\\",\\\"state\\\":\\\"working\\\",\\\"detail\\\":\\\"npm test\\\"}}\"" +
+            "\n\nstate: working · tool · needs_input · done · idle · end      optional: session, cwd, project, detail" +
+            $"\nAsk for approval: POST the same JSON to {url}/ask; the reply is allow, deny or empty (no answer).\n" +
+            "Or with the npm package: kawaii-island event --agent \"Gemini CLI\" --state working --detail \"npm test\""), below: true);
 
         Footer.Text = $"Saved on this PC in {_app.Config.Directory}";
     }
@@ -180,6 +216,18 @@ public partial class SettingsWindow : Window
         }
     }
 
+    /// <summary>Read-only, selectable code block for copy-paste setup snippets.</summary>
+    private static TextBox Snippet(string text)
+    {
+        var box = new TextBox
+        {
+            Text = text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, Padding = new Thickness(10, 8, 10, 8),
+            FontFamily = new FontFamily("Cascadia Mono, Consolas"), FontSize = 12, BorderThickness = new Thickness(1),
+        };
+        StyleBox(box);
+        return box;
+    }
+
     private static void StyleBox(Control box)
     {
         box.SetResourceReference(BackgroundProperty, "SettingsBackground");
@@ -230,12 +278,29 @@ public partial class SettingsWindow : Window
         host.Children.Add(grid);
     }
 
-    private static void Field(Panel host, string label, FrameworkElement control)
+    /// <summary>Settings row: label on the left, control on the right (or underneath for wide controls).</summary>
+    private static void Field(Panel host, string label, FrameworkElement control, bool below = false)
     {
-        var panel = new StackPanel { Margin = new Thickness(0, 6, 0, 6) };
-        panel.Children.Add(Label(label, 12.5, "IslandText", bold: true, margin: new Thickness(0, 0, 0, 6)));
-        panel.Children.Add(control);
-        host.Children.Add(panel);
+        var name = Label(label, 13, "IslandText", bold: true);
+        if (below)
+        {
+            name.Margin = new Thickness(0, 0, 0, 10);
+            Row(host, new StackPanel { Children = { name, control } });
+            return;
+        }
+        control.HorizontalAlignment = HorizontalAlignment.Right;
+        control.VerticalAlignment = VerticalAlignment.Center;
+        if (control is TextBox or PasswordBox) control.Width = 260;
+        DockPanel.SetDock(control, Dock.Right);
+        Row(host, new DockPanel { LastChildFill = true, Children = { control, name } });
+    }
+
+    /// <summary>Adds a row with even padding and a hairline above it (except the first in a card).</summary>
+    private static void Row(Panel host, FrameworkElement row)
+    {
+        var line = new Border { Padding = new Thickness(0, 12, 0, 12), Child = row, BorderThickness = new Thickness(0, host.Children.Count == 0 ? 0 : 1, 0, 0) };
+        line.SetResourceReference(Border.BorderBrushProperty, "SettingsLine");
+        host.Children.Add(line);
     }
 
     private void Switch(Panel host, string label, string caption, bool value, Action<bool> set)
@@ -248,7 +313,7 @@ public partial class SettingsWindow : Window
         var toggle = new CheckBox { Content = content, IsChecked = value, Style = (Style)FindResource("Switch") };
         AutomationProperties.SetName(toggle, label);
         toggle.Click += (_, _) => set(toggle.IsChecked == true);
-        host.Children.Add(toggle);
+        Row(host, toggle);
     }
 
     private FrameworkElement Segments((string Label, string Value)[] options, string current, Action<string> pick)
@@ -271,19 +336,16 @@ public partial class SettingsWindow : Window
         return frame;
     }
 
-    private ComboBox MonitorBox()
+    /// <summary>One segment per connected display ("1 · primary", "2"…); full names in the tooltip.</summary>
+    private FrameworkElement MonitorBox()
     {
-        var box = new ComboBox { MinWidth = 280, HorizontalAlignment = HorizontalAlignment.Left };
-        AutomationProperties.SetName(box, "Monitor");
         var monitors = App.MonitorChoices();
-        foreach (var (label, device) in monitors) box.Items.Add(new ComboBoxItem { Content = label, Tag = device });
-        int index = Array.FindIndex(monitors, m => m.Value == C.Window.MonitorId);
-        box.SelectedIndex = index >= 0 ? index : Math.Max(0, Array.FindIndex(monitors, m => m.Label.Contains("(primary)")));
-        box.SelectionChanged += (_, _) =>
-        {
-            if (box.SelectedItem is ComboBoxItem { Tag: string device }) { C.Window.MonitorId = device; Changed(); }
-        };
-        return box;
+        string current = monitors.Any(m => m.Value == C.Window.MonitorId) ? C.Window.MonitorId
+                       : monitors.FirstOrDefault(m => m.Label.Contains("(primary)")).Value ?? "";
+        var options = monitors.Select((m, i) => ($"Display {i + 1}" + (m.Label.Contains("(primary)") ? " · primary" : ""), m.Value)).ToArray();
+        var segments = Segments(options, current, v => { C.Window.MonitorId = v; Changed(); });
+        segments.ToolTip = string.Join(Environment.NewLine, monitors.Select(m => m.Label));
+        return segments;
     }
 
     /// <summary>One chip per muted app; clicking it unmutes.</summary>

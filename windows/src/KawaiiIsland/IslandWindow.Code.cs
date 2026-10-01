@@ -116,6 +116,9 @@ public partial class IslandWindow
             _tracker.OnStatus(e, DateTimeOffset.Now);
             return _tracker.StatusLine(e.TryGetProperty("session_id", out var id) ? id.GetString() ?? "" : "");
         });
+        server.Event += e => Dispatcher.BeginInvoke(() => _tracker.OnEvent(e, DateTimeOffset.Now));
+        server.Codex += e => Dispatcher.BeginInvoke(() => _tracker.OnCodex(e, DateTimeOffset.Now));
+        server.Ask = async e => await Dispatcher.InvokeAsync(() => AskApproval()).Task.Unwrap() ?? "";
         server.Permission = async e =>
         {
             var answer = await Dispatcher.InvokeAsync(() => AskApproval()).Task.Unwrap();
@@ -208,10 +211,10 @@ public partial class IslandWindow
         RenderExpanded();
         if (!on) return;
 
-        CodeTitle.Text = s is null ? "Locked in · Claude Code" : $"Claude Code · {s.Project}";
+        CodeTitle.Text = s is null ? "Locked in" : s.Project.Length > 0 ? $"{s.Agent} · {s.Project}" : s.Agent;
         CodeStateText.Text = s?.State switch
         {
-            null => "Waiting for a session (restart Claude Code after turning Code mode on)",
+            null => "Waiting for an agent. Connect Claude Code, Codex or others in Settings → AI agents.",
             CodeState.Thinking => "Thinking…",
             CodeState.Tool => "Running " + s.Detail,
             CodeState.NeedsYou => s.Detail.Length > 0 ? s.Detail : "Waiting for you",

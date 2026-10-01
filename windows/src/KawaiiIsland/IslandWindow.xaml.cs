@@ -81,6 +81,8 @@ public partial class IslandWindow : Window
         _applyTimer.Tick += (_, _) => { _applyTimer.Stop(); ApplySettingsNow(); };
 
         _appBar.Docked += OnDocked;
+        // Hidden (Settings open, tray "hide"): give the reserved strip back; showing again re-reserves it.
+        IsVisibleChanged += (_, _) => { if (_hwnd == 0) return; if (IsVisible) PlaceIsland(); else _appBar.Undock(); };
         App.Cleanup += _appBar.Dispose; // crash or exit: never leave a reserved strip behind
         InitCodeMode();
         InitAutoHide();

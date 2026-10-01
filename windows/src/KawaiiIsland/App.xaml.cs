@@ -170,7 +170,7 @@ public partial class App : Application
         menu.Items.Add(Choice("Mascot", mascots.Select(m => (MascotName(m), m)).ToArray(),
                               Config.Current.Appearance.Mascot, v => { Config.Current.Appearance.Mascot = v; SettingsChanged(); }));
         menu.Items.Add(Choice("Collapse after", CollapseChoices, island.AutoCollapseSeconds.ToString(), v => island.SetAutoCollapse(int.Parse(v))));
-        menu.Items.Add(Check("Code mode (Claude Code)", island.CodeMode, SetCodeMode));
+        menu.Items.Add(Check("Coding mode", island.CodeMode, SetCodeMode));
         menu.Items.Add(Check("Do not disturb", island.Dnd, on => { island.SetDnd(on); _settings?.Reload(); }));
         menu.Items.Add(new Separator());
         menu.Items.Add(Item("Settings…", ShowSettings));
@@ -231,64 +231,84 @@ public partial class App : Application
         return parent;
     }
 
+    /// <summary>Opens Settings in front of everything and hides the island until Settings closes.</summary>
     internal void ShowSettings()
     {
-        if (_settings is { IsLoaded: true }) { _settings.Activate(); return; }
-        _settings = new SettingsWindow(this);
-        _settings.Closed += (_, _) => _settings = null;
-        _settings.Show();
+        if (_settings is not { IsLoaded: true })
+        {
+            bool islandWasVisible = _island!.IsVisible;
+            _island.Hide();
+            _settings = new SettingsWindow(this);
+            _settings.Closed += (_, _) =>
+            {
+                _settings = null;
+                if (islandWasVisible) _island.ShowIsland();
+            };
+            _settings.Show();
+        }
+        // Windows blocks focus-stealing from background processes (tray, second launch): briefly topmost wins.
+        if (_settings.WindowState == WindowState.Minimized) _settings.WindowState = WindowState.Normal;
+        _settings.Topmost = true;
         _settings.Activate();
+        _settings.Topmost = false;
     }
 
-    // ---------------- Code mode ----------------
+    // ---------------- coding mode + AI agents ----------------
 
-    /// <summary>
-    /// Turning Code mode on edits ~/.claude/settings.json, so it is always an explicit, confirmed user action.
-    /// Off removes exactly our entries again.
-    /// </summary>
+    /// <summary>Coding mode = the local listener (any agent can report to it) + lock-in look. Edits no one's config.</summary>
     internal void SetCodeMode(bool on)
     {
         var code = Config.Current.Modules.Code;
-        const string title = "Kawaii Island · Code mode";
-        if (on)
+        if (on && _island!.StartCodeMode() is { } error)
         {
-            bool first = !code.Consented;
-            var answer = !first ? MessageBoxResult.Yes : MessageBox.Show(
-                "Code mode shows your Claude Code sessions on the island: what Claude is doing, context used, " +
-                "and your 5-hour and weekly plan usage.\n\n" +
-                $"It adds Kawaii Island hooks (and a status line, if you don't already have one) to:\n{ClaudeSettings.SettingsPath}\n\n" +
-                "A backup is saved next to it. Nothing leaves this PC. Turning Code mode off removes them again.\n\nTurn on Code mode?",
-                title, MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (answer != MessageBoxResult.Yes) return;
+            MessageBox.Show(error, "Kawaii Island · Coding mode", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        if (!on) _island!.StopCodeMode();
+        code.Enabled = on;
+        Config.SaveSoon();
+        _settings?.Reload();
+    }
 
-            if (_island!.StartCodeMode() is { } error) { MessageBox.Show(error, title, MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-            try
+    /// <summary>
+    /// Connects Claude Code: adds our hooks (and a status line if there's none) to ~/.claude/settings.json. Explicit
+    /// and confirmed the first time; off removes exactly our entries. Turns coding mode on so events have a listener.
+    /// </summary>
+    internal void SetClaudeHooks(bool on)
+    {
+        var code = Config.Current.Modules.Code;
+        const string title = "Kawaii Island · Claude Code";
+        try
+        {
+            if (on)
             {
+                bool first = !code.Consented;
+                if (first && MessageBox.Show(
+                        "Kawaii Island will show your Claude Code sessions: what Claude is doing, context used, plan usage, " +
+                        "and Allow / Deny for permission prompts.\n\n" +
+                        $"It adds Kawaii Island hooks (and a status line, if you don't already have one) to:\n{ClaudeSettings.SettingsPath}\n\n" +
+                        "A backup is saved next to it. Nothing leaves this PC. Turning this off removes them again.\n\nConnect Claude Code?",
+                        title, MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
                 bool statusLine = ClaudeSettings.Apply(enable: true, code.Port);
-                code.Enabled = code.Consented = true;
-                Config.SaveSoon();
+                code.ClaudeHooks = code.Consented = true;
+                if (!_island!.CodeMode) SetCodeMode(true);
                 if (first) MessageBox.Show(
-                    "Code mode is on. Restart any open Claude Code sessions: hooks load when a session starts." +
+                    "Claude Code is connected. Restart any open Claude Code sessions: hooks load when a session starts." +
                     (statusLine ? "" : "\n\nYou already use a custom status line, so 5-hour/weekly usage can't be shown. Activity and context still work."),
                     title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
-            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+            else
             {
-                _island.StopCodeMode();
-                MessageBox.Show("Couldn't update Claude Code settings:\n" + ex.Message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+                ClaudeSettings.Apply(enable: false, code.Port);
+                code.ClaudeHooks = false;
             }
         }
-        else
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
         {
-            try { ClaudeSettings.Apply(enable: false, code.Port); }
-            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
-            {
-                MessageBox.Show("Couldn't remove the hooks from Claude Code settings:\n" + ex.Message, title, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            _island!.StopCodeMode();
-            code.Enabled = false;
-            Config.SaveSoon();
+            Log.LogWarning(ex, "Couldn't update Claude Code settings");
+            MessageBox.Show("Couldn't update Claude Code settings:\n" + ex.Message, title, MessageBoxButton.OK, MessageBoxImage.Error);
         }
+        Config.SaveSoon();
         _settings?.Reload();
     }
 

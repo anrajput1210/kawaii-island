@@ -85,6 +85,16 @@ internal static partial class Win32
         return GetLastInputInfo(ref info) ? TimeSpan.FromMilliseconds(unchecked((uint)Environment.TickCount - info.dwTime)) : TimeSpan.Zero;
     }
 
+    [LibraryImport("dwmapi.dll")]
+    private static partial int DwmSetWindowAttribute(nint hwnd, int attribute, ref int value, int size);
+
+    /// <summary>Dark title bar to match the dark theme (Windows 10 20H1+ / 11; ignored elsewhere).</summary>
+    public static void UseDarkTitleBar(nint hwnd, bool dark)
+    {
+        int on = dark ? 1 : 0;
+        DwmSetWindowAttribute(hwnd, 20, ref on, sizeof(int)); // DWMWA_USE_IMMERSIVE_DARK_MODE
+    }
+
     /// <summary>Marks the window as a non-activating tool window.</summary>
     public static void MakeToolWindow(nint hwnd)
     {

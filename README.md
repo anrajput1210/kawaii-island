@@ -24,17 +24,39 @@ A cute, customizable **Dynamic Island for Windows 11** (macOS version in progres
 - **Ctrl+Alt+I** opens and closes the island from anywhere (change it in Settings → Behavior). **Start with Windows** is on by default for installed builds.
 - **Coding mode** (`</>` button on the island): the mascot puts on a hoodie and glasses, a lock-in timer runs, and alerts stop popping the island open.
 - Follows the [design guidelines](#design-guidelines): glanceable, quiet by default, message text hidden until you allow previews, height that fits its content, honours Windows "Animation effects".
-- **Code mode (Claude Code companion):** live status of your Claude Code sessions (thinking, which tool is running, needs your permission, done), plus context used, 5-hour and weekly plan usage with reset times, and session cost. See below.
+- **AI agent companion:** live status of Claude Code, Codex, Gemini CLI, Cursor or any agent that can run a hook (working, which tool, needs you, done), Allow / Deny on the island, plus context and plan usage for Claude Code. See [AI agents](#ai-agents-claude-code-codex-gemini-cli-cursor-aider).
 
-## Code mode (Claude Code)
+## Install (Windows 10 2004+ / Windows 11)
 
-Turn it on from the tray: **Code mode (Claude Code)**. After you confirm, Kawaii Island adds a few entries to `~/.claude/settings.json` (a backup is saved as `settings.json.kawaii-backup`):
+```powershell
+npm install -g kawaii-island
+```
 
-- **Hooks** for session, prompt, tool, notification and stop events. Each one is an `async` `curl` call to `http://127.0.0.1:47811/kawaii/hook`, so Claude Code never waits on them.
-- **A permission hook** (synchronous) so you can answer **Allow / Deny** on the island. It waits up to 2 minutes, then hands the question back to the terminal; if the island isn't running it falls back immediately. Turn it off in Settings → Claude Code → *Approve from the island*. There's no helper program that could go missing, and if the island isn't running the call just fails quietly.
-- **A status line**, but only if you don't already have one. It sends usage to the island and shows `🏝 ctx 23% · 5h 41% · wk 12%` in Claude Code. Plan usage (5-hour and weekly) comes from Claude Code's status line data, which is only available on Pro and Max plans.
+That's it: no .NET needed (the package ships a self-contained app). It installs per-user to `%LOCALAPPDATA%\Programs\KawaiiIsland`, adds **Kawaii Island** to the Start menu, starts with Windows (turn that off in Settings → General) and launches. Other commands:
 
-Turning Code mode off, or uninstalling the app (`KawaiiIsland.exe --uninstall-hooks`), removes exactly those entries and nothing else. Restart open Claude Code sessions after you toggle it, because hooks load when a session starts. The listener only accepts connections from this PC, and session data is kept in memory only.
+```powershell
+npx kawaii-island                  # install if needed, then start
+kawaii-island status | start | stop
+kawaii-island uninstall [--purge]  # --purge also deletes your settings
+```
+
+## AI agents (Claude Code, Codex, Gemini CLI, Cursor, Aider…)
+
+Turn on **coding mode** with the `</>` button on the island: the mascot puts on its hoodie and glasses, a lock-in timer runs, alerts stop popping the island open, and a listener on `127.0.0.1` (this PC only) shows what your agents are doing. Data stays in memory.
+
+- **Claude Code** — Settings → AI agents → *Claude Code*. After you confirm, Kawaii Island adds entries to `~/.claude/settings.json` (backup: `settings.json.kawaii-backup`): async `curl` hooks for session, prompt, tool, notification and stop events; a synchronous permission hook so you can answer **Allow / Deny** on the island (2 minutes, then back to the terminal; immediate fallback if the island isn't running); and a status line, only if you don't have one, which brings context and 5-hour / weekly plan usage (Pro and Max). Turning it off, or `kawaii-island uninstall`, removes exactly those entries. Restart open sessions after toggling.
+- **Codex CLI** — add to `~/.codex/config.toml` (Codex appends its JSON as the last argument):
+  ```toml
+  notify = ["curl", "-s", "-m", "2", "-H", "Content-Type: application/json", "http://127.0.0.1:47811/kawaii/codex", "--data-binary"]
+  ```
+- **Any other agent or script** — call this from its hooks:
+  ```powershell
+  kawaii-island event --agent "Gemini CLI" --state working --detail "npm test"
+  # or without the npm package:
+  curl -s -m 2 http://127.0.0.1:47811/kawaii/event -H "Content-Type: application/json" -d '{"agent":"Gemini CLI","state":"working","detail":"npm test"}'
+  ```
+  `state` is one of `working`, `tool`, `needs_input`, `done`, `idle`, `end`; `session`, `cwd`, `project` and `detail` are optional.
+  **Approvals:** `kawaii-island ask "Run the migration?" --agent Aider` waits for Allow / Deny on the island and exits `0` (allow), `1` (deny) or `2` (no answer); the raw endpoint is `POST /kawaii/ask` (reply `allow`, `deny` or empty).
 
 ## Privacy: everything stays on your device
 
@@ -44,7 +66,7 @@ Turning Code mode off, or uninstalling the app (`KawaiiIsland.exe --uninstall-ho
 - Mirrored notifications are kept in memory only (last 20) and disappear when the app quits. Only the names of apps you mute are saved.
 - The only network traffic is to **your own mail server** if you turn on IMAP.
 
-## Build & run (Windows)
+## Build from source
 
 Requirements: Windows 10 2004+ / Windows 11, [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
 
@@ -54,6 +76,8 @@ dotnet build
 dotnet test
 dotnet run --project src/KawaiiIsland
 ```
+
+Build the npm package (maintainers; needs the .NET 8 SDK): `cd installer/npm && npm run build` publishes a single self-contained `dist/KawaiiIsland.exe`; `npm pack` / `npm publish` run it automatically.
 
 `--data <folder>` runs with a separate settings folder (handy for demos; the screenshots above use mock mail and notifications). Development builds never register themselves to start with Windows unless you turn it on in Settings.
 

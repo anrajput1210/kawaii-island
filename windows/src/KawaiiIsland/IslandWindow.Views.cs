@@ -91,11 +91,12 @@ public partial class IslandWindow
         TabApps.IsChecked = _view == View.Apps;
         AppsPanel.Visibility = Vis(_view == View.Apps || (_view == View.Home && apps)); // Home: clock + your apps
         MailPanel.Visibility = Vis(_view == View.Mail);
-        MascotTiny.Visibility = SmallClock.Visibility = Vis(header);
+        MascotTiny.Visibility = SmallClock.Visibility = CodeToggleSmall.Visibility = Vis(header); // one </> button per view
         MainRow.Visibility = Vis(!header);
         ClockBlock.Visibility = Vis(_view == View.Home);
         Greeting.Visibility = Vis(_view == View.Home && !apps);
-        CodeHeader.Visibility = CodeMeters.Visibility = CodeFooter.Visibility = Vis(_view == View.Code);
+        CodeHeader.Visibility = CodeFooter.Visibility = Vis(_view == View.Code);
+        CodeMeters.Visibility = Vis(_view == View.Code && _tracker.Active?.Agent is null or "Claude Code"); // usage meters are Claude-only
         MusicPanel.Visibility = Vis(_view == View.Music);
         AlertsPanel.Visibility = Vis(_view == View.Alerts);
         FitExpanded();

@@ -29,3 +29,7 @@ DerivedData/
 # Tooling
 node_modules/
 installer/out/
+
+# npm package build output
+installer/npm/dist/
+*.tgz

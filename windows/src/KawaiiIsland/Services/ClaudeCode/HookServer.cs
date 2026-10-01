@@ -13,6 +13,9 @@ namespace KawaiiIsland.Services.ClaudeCode;
 ///   POST /kawaii/status  → <see cref="Status"/> (reply text becomes Claude Code's status bar)
 ///   POST /kawaii/permission → <see cref="Hook"/> + <see cref="Permission"/>: held open until the user answers on the
 ///                             island; the reply is the hook's decision JSON ("" = ask in the terminal as usual)
+///   POST /kawaii/event   → <see cref="Event"/> (agent-neutral activity from any tool)
+///   POST /kawaii/codex   → <see cref="Codex"/> (Codex CLI notify payload)
+///   POST /kawaii/ask     → <see cref="Event"/> + <see cref="Ask"/>: held until Allow/Deny; reply "allow", "deny" or ""
 /// A raw TcpListener avoids HttpListener's URL-ACL/admin requirements on Windows.
 /// </summary>
 public sealed class HookServer(int port) : IDisposable
@@ -25,6 +28,12 @@ public sealed class HookServer(int port) : IDisposable
     public event Action<JsonElement>? Hook;
     /// <summary>Called on a thread-pool thread; returns the status-line text.</summary>
     public Func<JsonElement, string>? Status { get; set; }
+    /// <summary>Raised on a thread-pool thread for /kawaii/event and /kawaii/ask.</summary>
+    public event Action<JsonElement>? Event;
+    /// <summary>Raised on a thread-pool thread for /kawaii/codex.</summary>
+    public event Action<JsonElement>? Codex;
+    /// <summary>Called on a thread-pool thread; completes with "allow", "deny" or "" (no answer).</summary>
+    public Func<JsonElement, Task<string>>? Ask { get; set; }
     /// <summary>Called on a thread-pool thread; completes with the PermissionRequest hook output.</summary>
     public Func<JsonElement, Task<string>>? Permission { get; set; }
 
@@ -65,6 +74,19 @@ public sealed class HookServer(int port) : IDisposable
                     case "/kawaii/status":
                         using (var doc = JsonDocument.Parse(body)) reply = Status?.Invoke(doc.RootElement.Clone()) ?? "";
                         break;
+                    case "/kawaii/event":
+                        using (var doc = JsonDocument.Parse(body)) Event?.Invoke(doc.RootElement.Clone());
+                        break;
+                    case "/kawaii/codex":
+                        using (var doc = JsonDocument.Parse(body)) Codex?.Invoke(doc.RootElement.Clone());
+                        break;
+                    case "/kawaii/ask":
+                        JsonElement question;
+                        using (var doc = JsonDocument.Parse(body)) question = doc.RootElement.Clone();
+                        Event?.Invoke(question);
+                        reply = Ask is null ? "" : await Ask(question);
+                        await Respond(stream, "200 OK", reply, _cts.Token);
+                        return;
                     case "/kawaii/permission":
                         JsonElement request;
                         using (var doc = JsonDocument.Parse(body)) request = doc.RootElement.Clone();

@@ -90,4 +90,35 @@ public sealed class CodeTrackerTests
         t.OnHook(Hook("SomeFutureEvent"), T0);
         Assert.Equal(1, changes);
     }
+
+    [Fact]
+    public void Any_agent_can_report_with_the_neutral_event_format()
+    {
+        var t = new CodeTracker();
+        t.OnEvent(J("""{ "agent": "Gemini CLI", "cwd": "C:\\code\\site", "state": "working", "detail": "npm test" }"""), T0);
+        Assert.Equal("Gemini CLI", t.Active!.Agent);
+        Assert.Equal("site", t.Active.Project);
+        Assert.Equal(CodeState.Thinking, t.Active.State);
+
+        t.OnEvent(J("""{ "agent": "Gemini CLI", "cwd": "C:\\code\\site", "state": "needs_input", "detail": "Run rm -rf?" }"""), T0.AddSeconds(1));
+        Assert.Equal(CodeState.NeedsYou, t.Active.State);
+        Assert.Single(t.Sessions); // same agent + folder = same session
+
+        t.OnEvent(J("""{ "agent": "Gemini CLI", "state": "mystery" }"""), T0.AddSeconds(2)); // unknown state: ignored
+        Assert.Equal(CodeState.NeedsYou, t.Active.State);
+
+        t.OnEvent(J("""{ "agent": "Gemini CLI", "cwd": "C:\\code\\site", "state": "end" }"""), T0.AddSeconds(3));
+        Assert.Empty(t.Sessions);
+    }
+
+    [Fact]
+    public void Codex_notify_payload_marks_the_turn_done()
+    {
+        var t = new CodeTracker();
+        t.OnCodex(J("""{ "type": "agent-turn-complete", "thread-id": "th1", "cwd": "/home/me/api", "last-assistant-message": "All tests pass.\nDone." }"""), T0);
+        Assert.Equal("Codex", t.Active!.Agent);
+        Assert.Equal("api", t.Active.Project);
+        Assert.Equal(CodeState.Done, t.Active.State);
+        Assert.Equal("All tests pass. Done.", t.Active.Detail);
+    }
 }

@@ -175,6 +175,8 @@ public sealed class CodeConfig
 {
     public bool Enabled { get; set; }
     public int Port { get; set; } = 47811;
+    /// <summary>Our hooks are installed in ~/.claude/settings.json (Settings → AI agents → Claude Code).</summary>
+    public bool ClaudeHooks { get; set; }
     /// <summary>The user has OK'd editing ~/.claude/settings.json once; later toggles skip the explanation.</summary>
     public bool Consented { get; set; }
     /// <summary>Answer Claude Code permission prompts (Allow / Deny) from the island.</summary>

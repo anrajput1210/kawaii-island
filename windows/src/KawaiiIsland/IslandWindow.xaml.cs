@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
 using System.Windows.Threading;
 using Microsoft.Win32;
 using KawaiiIsland.Controls;
@@ -14,21 +15,28 @@ namespace KawaiiIsland;
 
 public partial class IslandWindow : Window
 {
-    private const double ShadowMargin = 40;
+    private const double ShadowMargin = 40, Gap = 6, SnapThreshold = 24;
 
     /// <summary>Animatable stand-in for Pill.CornerRadius (CornerRadius itself has no animation type).
     /// Defaults to 0 so the first real value always fires the callback.</summary>
     public static readonly DependencyProperty PillRadiusProperty = DependencyProperty.Register(
         nameof(PillRadius), typeof(double), typeof(IslandWindow),
-        new PropertyMetadata(0.0, (d, e) => ((IslandWindow)d).Pill.CornerRadius = new CornerRadius((double)e.NewValue)));
+        new PropertyMetadata(0.0, (d, e) =>
+        {
+            var w = (IslandWindow)d;
+            w.Pill.CornerRadius = new CornerRadius((double)e.NewValue);
+            w.SizeOutline();
+        }));
 
     public double PillRadius { get => (double)GetValue(PillRadiusProperty); set => SetValue(PillRadiusProperty, value); }
 
     private readonly ConfigService _config;
+    private readonly AppBarService _appBar = new();
     private readonly DispatcherTimer _clock = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly DispatcherTimer _autoCollapse = new();
     private readonly DispatcherTimer _moodTimer = new();
     private readonly ClickBurst _burst = new();
+    private nint _hwnd;
     private bool _expanded;
     private string? _mood; // null = normal; "wow" (hover), "annoyed" (poked), "dizzy" (3 quick pokes)
 
@@ -54,6 +62,9 @@ public partial class IslandWindow : Window
         Pill.MouseLeftButtonUp += (_, _) => { if (Win.Locked) SetExpanded(!_expanded); };
         Pill.SizeChanged += (_, _) => SizeOutline();
         foreach (var m in Mascots) m.MouseLeftButtonUp += OnMascotPoked;
+
+        _appBar.Docked += OnDocked;
+        App.Cleanup += _appBar.Dispose; // crash or exit: never leave a reserved strip behind
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -68,6 +79,7 @@ public partial class IslandWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged; // static event: unsubscribe or leak
+        _appBar.Dispose();
         base.OnClosed(e);
     }
 
@@ -81,46 +93,113 @@ public partial class IslandWindow : Window
         ExpandedPanel.Width = Win.ExpandedWidth;
         ExpandedPanel.Height = Win.ExpandedHeight;
         Opacity = Win.Opacity;
-        _autoCollapse.Interval = TimeSpan.FromSeconds(_config.Current.Behavior.AutoCollapseSeconds);
         foreach (var m in Mascots) m.Skin = _config.Current.Appearance.Mascot;
         Outline.Visibility = Win.Locked ? Visibility.Collapsed : Visibility.Visible;
+        ApplyAnchor();
     }
 
-    // ---------------- placement (physical pixels via Win32; see Services/Native/Monitors.cs) ----------------
-
-    private const double PillTop = 6, SnapThreshold = 24, SnapGap = 6;
-    private nint _hwnd;
-    private double Dpi => VisualTreeHelper.GetDpi(this).DpiScaleX;
-
-    /// <summary>Collapsed pill footprint inside a window rect (physical px).</summary>
-    private Rect PillRect(Rect window)
+    private void UpdateClock()
     {
-        double s = Dpi, w = Win.CollapsedWidth * s, h = Win.CollapsedHeight * s;
-        return new Rect(window.X + (window.Width - w) / 2, window.Y + PillTop * s, w, h);
+        var now = DateTime.Now;
+        Clock.Text = BigClock.Text = now.ToString("t");
+        DateText.Text = now.ToString("dddd, MMMM d");
     }
 
-    /// <summary>Window top-left that puts the pill's top-left at <paramref name="pill"/>.</summary>
-    private Point WindowFor(Point pill, Rect window, double scale) =>
-        new(pill.X - (window.Width - Win.CollapsedWidth * scale) / 2, pill.Y - PillTop * scale);
+    // ---------------- placement (physical pixels via Win32; see Services/Native) ----------------
+
+    private double Dpi => VisualTreeHelper.GetDpi(this).DpiScaleX;
+    private Edge DockEdge => Placement.ParseEdge(Win.DockEdge);
 
     /// <summary>
-    /// Docked (or never placed): top-centre of the saved/primary monitor — Phase 4 turns this into a real
-    /// AppBar reservation. Free-floating: the saved per-monitor offset, clamped on-screen; missing monitor → primary.
+    /// The pill hugs the docked edge so it expands away from it (bottom dock grows upward, right dock grows left…).
+    /// Free-floating islands grow down from their top-centre.
+    /// </summary>
+    private (HorizontalAlignment H, VerticalAlignment V) Anchor()
+    {
+        if (!Win.AppBarEnabled) return (HorizontalAlignment.Center, VerticalAlignment.Top);
+        string a = Win.Alignment.ToLowerInvariant();
+        var h = DockEdge switch
+        {
+            Edge.Left => HorizontalAlignment.Left,
+            Edge.Right => HorizontalAlignment.Right,
+            _ => a == "left" ? HorizontalAlignment.Left : a == "right" ? HorizontalAlignment.Right : HorizontalAlignment.Center,
+        };
+        var v = DockEdge switch
+        {
+            Edge.Top => VerticalAlignment.Top,
+            Edge.Bottom => VerticalAlignment.Bottom,
+            _ => a == "top" ? VerticalAlignment.Top : a == "bottom" ? VerticalAlignment.Bottom : VerticalAlignment.Center,
+        };
+        return (h, v);
+    }
+
+    private void ApplyAnchor()
+    {
+        var (h, v) = Anchor();
+        Pill.HorizontalAlignment = Outline.HorizontalAlignment = h;
+        Pill.VerticalAlignment = Outline.VerticalAlignment = v;
+        Pill.Margin = new Thickness(h == HorizontalAlignment.Left ? Gap : 0, v == VerticalAlignment.Top ? Gap : 0,
+                                    h == HorizontalAlignment.Right ? Gap : 0, v == VerticalAlignment.Bottom ? Gap : 0);
+        Outline.Margin = new Thickness(Pill.Margin.Left - 5, Pill.Margin.Top - 5, Pill.Margin.Right - 5, Pill.Margin.Bottom - 5);
+        Pill.RenderTransformOrigin = new Point(h == HorizontalAlignment.Left ? 0 : h == HorizontalAlignment.Right ? 1 : 0.5,
+                                               v == VerticalAlignment.Top ? 0 : v == VerticalAlignment.Bottom ? 1 : 0.5);
+        ExpandedPanel.VerticalAlignment = v == VerticalAlignment.Bottom ? VerticalAlignment.Bottom : VerticalAlignment.Top;
+    }
+
+    /// <summary>Collapsed pill footprint (physical px) inside a window placed at <paramref name="window"/>.</summary>
+    private Rect PillRect(Rect window, double scale)
+    {
+        var (h, v) = Anchor();
+        var size = new Size(Win.CollapsedWidth * scale, Win.CollapsedHeight * scale);
+        var off = Placement.PillOffset(window.Size, size, h, v, Gap * scale);
+        return new Rect(window.X + off.X, window.Y + off.Y, size.Width, size.Height);
+    }
+
+    /// <summary>Window top-left that puts the collapsed pill's top-left at <paramref name="pill"/>.</summary>
+    private Point WindowFor(Point pill, Size window, double scale)
+    {
+        var (h, v) = Anchor();
+        var off = Placement.PillOffset(window, new Size(Win.CollapsedWidth * scale, Win.CollapsedHeight * scale), h, v, Gap * scale);
+        return new Point(pill.X - off.X, pill.Y - off.Y);
+    }
+
+    /// <summary>
+    /// AppBar mode: reserve a strip on the saved/primary monitor (OnDocked then places the pill inside it).
+    /// Free-floating: release any reservation and restore the saved per-monitor offset, clamped on-screen.
     /// ponytail: assumes the window's current DPI matches the target monitor; mixed-DPI moves settle after WM_DPICHANGED.
     /// </summary>
     private void PlaceIsland()
     {
-        var window = Monitors.WindowRect(_hwnd);
         var mon = Win.MonitorId.Length > 0 ? Monitors.ByDevice(Win.MonitorId) : Monitors.Primary();
-        if (Win.AppBarEnabled || Win.MonitorId.Length == 0)
+        if (Win.AppBarEnabled)
+        {
+            bool horizontal = DockEdge is Edge.Top or Edge.Bottom;
+            double thickness = ((horizontal ? Win.CollapsedHeight : Win.CollapsedWidth) + 2 * Gap) * mon.Scale;
+            _appBar.Dock(mon, DockEdge, thickness);
+            return;
+        }
+
+        _appBar.Undock();
+        var window = Monitors.WindowRect(_hwnd);
+        if (Win.MonitorId.Length == 0) // never placed: top-centre
         {
             Monitors.MoveWindow(_hwnd, mon.Work.X + (mon.Work.Width - window.Width) / 2, mon.Work.Y);
             return;
         }
         var saved = new Rect(mon.Work.X + Win.X * mon.Scale, mon.Work.Y + Win.Y * mon.Scale,
                              Win.CollapsedWidth * mon.Scale, Win.CollapsedHeight * mon.Scale);
-        var pos = WindowFor(Placement.ClampInto(saved, mon.Work), window, mon.Scale);
+        var pos = WindowFor(Placement.ClampInto(saved, mon.Work), window.Size, mon.Scale);
         Monitors.MoveWindow(_hwnd, pos.X, pos.Y);
+    }
+
+    /// <summary>Strip reserved (or moved by the shell): put the pill inside it per edge + alignment.</summary>
+    private void OnDocked(Rect strip, MonitorInfo mon)
+    {
+        var pillSize = new Size(Win.CollapsedWidth * mon.Scale, Win.CollapsedHeight * mon.Scale);
+        var pill = Placement.PillInStrip(strip, DockEdge, Win.Alignment, pillSize, Gap * mon.Scale);
+        var pos = WindowFor(pill, Monitors.WindowRect(_hwnd).Size, mon.Scale);
+        Monitors.MoveWindow(_hwnd, pos.X, pos.Y);
+        Win.MonitorId = mon.Device;
     }
 
     private void OnDisplaySettingsChanged(object? sender, EventArgs e) => Dispatcher.BeginInvoke(PlaceIsland);
@@ -140,10 +219,11 @@ public partial class IslandWindow : Window
 
     private void SnapAndSave(Rect window)
     {
-        var pill = PillRect(window);
+        double s = Dpi;
+        var pill = PillRect(window, s);
         var mon = Monitors.For(pill);
-        var target = Placement.Snap(pill, mon.Work, SnapThreshold * mon.Scale, SnapGap * mon.Scale);
-        AnimateWindow(window.TopLeft, WindowFor(target, window, Dpi));
+        var target = Placement.Snap(pill, mon.Work, SnapThreshold * mon.Scale, Gap * mon.Scale);
+        AnimateWindow(window.TopLeft, WindowFor(target, window.Size, s));
         SavePosition(mon, target);
     }
 
@@ -171,19 +251,38 @@ public partial class IslandWindow : Window
     }
 
     public bool Locked => Win.Locked;
+    public bool AppBarEnabled => Win.AppBarEnabled;
+    public int AutoCollapseSeconds => _config.Current.Behavior.AutoCollapseSeconds;
 
-    /// <summary>Unlocking switches to free-floating (AppBar off) and remembers the current spot; locking keeps it.</summary>
+    /// <summary>Unlocking switches to free-floating (AppBar off) where the island is now; locking keeps it there.</summary>
     public void SetLocked(bool locked)
     {
+        if (!locked && Win.AppBarEnabled) SetAppBar(false);
         Win.Locked = locked;
-        if (!locked)
-        {
-            Win.AppBarEnabled = false;
-            var pill = PillRect(Monitors.WindowRect(_hwnd));
-            SavePosition(Monitors.For(pill), pill.TopLeft);
-        }
         Outline.Visibility = locked ? Visibility.Collapsed : Visibility.Visible;
         _config.SaveSoon();
+    }
+
+    /// <summary>On: lock and reserve the strip on the island's current monitor. Off: release it and float in place.</summary>
+    public void SetAppBar(bool on)
+    {
+        if (on == Win.AppBarEnabled) return;
+        var pill = PillRect(Monitors.WindowRect(_hwnd), Dpi);   // measured with the current anchor
+        var mon = Monitors.For(pill);
+        Win.AppBarEnabled = on;
+        if (on) { Win.Locked = true; Outline.Visibility = Visibility.Collapsed; Win.MonitorId = mon.Device; }
+        else SavePosition(mon, pill.TopLeft);
+        ApplyAnchor();
+        PlaceIsland();
+        _config.SaveSoon();
+    }
+
+    /// <summary>0 = never auto-collapse.</summary>
+    public void SetAutoCollapse(int seconds)
+    {
+        _config.Current.Behavior.AutoCollapseSeconds = seconds;
+        _config.SaveSoon();
+        ArmAutoCollapse();
     }
 
     private void SizeOutline()
@@ -191,13 +290,6 @@ public partial class IslandWindow : Window
         Outline.Width = Pill.ActualWidth + 10;
         Outline.Height = Pill.ActualHeight + 10;
         Outline.RadiusX = Outline.RadiusY = PillRadius + 5;
-    }
-
-    private void UpdateClock()
-    {
-        var now = DateTime.Now;
-        Clock.Text = BigClock.Text = now.ToString("t");
-        DateText.Text = now.ToString("dddd, MMMM d");
     }
 
     // ---------------- expand / collapse ----------------
@@ -235,7 +327,10 @@ public partial class IslandWindow : Window
     private void ArmAutoCollapse()
     {
         _autoCollapse.Stop();
-        if (_expanded && !Pill.IsMouseOver) _autoCollapse.Start();
+        int seconds = _config.Current.Behavior.AutoCollapseSeconds;
+        if (!_expanded || seconds == 0 || Pill.IsMouseOver) return;
+        _autoCollapse.Interval = TimeSpan.FromSeconds(seconds);
+        _autoCollapse.Start();
     }
 
     /// <summary>Children fade + slide up 6 px, one after another (60 ms stagger).</summary>
@@ -269,14 +364,14 @@ public partial class IslandWindow : Window
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
         HoverScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(over ? 1.04 : 1, d) { EasingFunction = ease });
         HoverScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(over ? 1.04 : 1, d) { EasingFunction = ease });
-        Shadow.BeginAnimation(System.Windows.Media.Effects.DropShadowEffect.ColorProperty, new ColorAnimation(over ? Accent() : Colors.Black, d));
-        Shadow.BeginAnimation(System.Windows.Media.Effects.DropShadowEffect.BlurRadiusProperty, new DoubleAnimation(over ? 32 : 24, d));
-        Shadow.BeginAnimation(System.Windows.Media.Effects.DropShadowEffect.OpacityProperty, new DoubleAnimation(over ? 0.6 : 0.45, d));
+        Shadow.BeginAnimation(DropShadowEffect.ColorProperty, new ColorAnimation(over ? Accent() : Colors.Black, d));
+        Shadow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, new DoubleAnimation(over ? 32 : 24, d));
+        Shadow.BeginAnimation(DropShadowEffect.OpacityProperty, new DoubleAnimation(over ? 0.6 : 0.45, d));
 
         if (over)
         {
             _autoCollapse.Stop();
-            if (_mood != null) return;                        // don't interrupt annoyed/dizzy
+            if (_mood != null) return;                                   // don't interrupt annoyed/dizzy
             await Task.WhenAll(Mascots.Select(m => m.BlinkOnceAsync())); // blink...
             if (Pill.IsMouseOver && _mood == null) SetMood("wow");      // ...then the eyes grow
         }

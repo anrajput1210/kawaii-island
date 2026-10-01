@@ -69,6 +69,8 @@ public partial class IslandWindow : Window
             e.Handled = true;
             var menu = ((App)Application.Current).IslandMenu();
             menu.PlacementTarget = Pill;
+            menu.Closed += (_, _) => HideSoon();
+            _menu = menu;
             menu.IsOpen = true;
         };
         foreach (var m in Mascots) m.MouseLeftButtonUp += OnMascotPoked;
@@ -77,6 +79,7 @@ public partial class IslandWindow : Window
         _appBar.Docked += OnDocked;
         App.Cleanup += _appBar.Dispose; // crash or exit: never leave a reserved strip behind
         InitCodeMode();
+        InitAutoHide();
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -107,6 +110,7 @@ public partial class IslandWindow : Window
         ExpandedPanel.Height = Win.ExpandedHeight;
         Opacity = Win.Opacity;
         foreach (var m in Mascots) m.Skin = _config.Current.Appearance.Mascot;
+        PeekMascot.Skin = _config.Current.Appearance.Mascot;
         Outline.Visibility = Win.Locked ? Visibility.Collapsed : Visibility.Visible;
         ApplyAnchor();
     }
@@ -160,6 +164,7 @@ public partial class IslandWindow : Window
         Pill.RenderTransformOrigin = new Point(h == HorizontalAlignment.Left ? 0 : h == HorizontalAlignment.Right ? 1 : 0.5,
                                                v == VerticalAlignment.Top ? 0 : v == VerticalAlignment.Bottom ? 1 : 0.5);
         ExpandedPanel.VerticalAlignment = v == VerticalAlignment.Bottom ? VerticalAlignment.Bottom : VerticalAlignment.Top;
+        AnchorEdgeParts();
     }
 
     /// <summary>Collapsed pill footprint (physical px) inside a window placed at <paramref name="window"/>.</summary>
@@ -191,6 +196,12 @@ public partial class IslandWindow : Window
         {
             bool horizontal = DockEdge is Edge.Top or Edge.Bottom;
             double thickness = ((horizontal ? Win.CollapsedHeight : Win.CollapsedWidth) + 2 * Gap) * mon.Scale;
+            if (_autoHiding) // auto-hidden: same spot on the bare monitor edge, nothing reserved
+            {
+                _appBar.Undock();
+                OnDocked(Placement.Strip(mon.Bounds, DockEdge, thickness), mon);
+                return;
+            }
             _appBar.Dock(mon, DockEdge, thickness);
             return;
         }
@@ -312,6 +323,7 @@ public partial class IslandWindow : Window
 
     public void SetExpanded(bool expand)
     {
+        if (expand && _hidden) SlidePill(hide: false); // auto-hidden: opening reveals it (peek click, Code mode)
         if (_expanded == expand) return;
         _expanded = expand;
 
@@ -330,6 +342,7 @@ public partial class IslandWindow : Window
         else
         {
             _autoCollapse.Stop();
+            HideSoon();
             Fade(ExpandedPanel, 0, 120, () => { if (!_expanded) ExpandedPanel.Visibility = Visibility.Collapsed; });
             Fade(CollapsedPanel, 1, 180, delayMs: 120);
         }

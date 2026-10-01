@@ -139,6 +139,8 @@ public partial class App : Application
                               w.DockEdge, v => { w.DockEdge = v; SettingsChanged(); }));
         menu.Items.Add(Choice("Alignment", AlignmentChoices(vertical), w.Alignment, v => { w.Alignment = v; SettingsChanged(); }));
         menu.Items.Add(Choice("Monitor", MonitorChoices(), w.MonitorId, v => { w.MonitorId = v; SettingsChanged(); }));
+        menu.Items.Add(Check("Auto-hide in fullscreen", island.AutoHideFullscreen, on => island.SetAutoHide(on, island.AutoHideAlways)));
+        menu.Items.Add(Check("Auto-hide always", island.AutoHideAlways, on => island.SetAutoHide(island.AutoHideFullscreen, on)));
         menu.Items.Add(new Separator());
         menu.Items.Add(Choice("Mascot", AppConfig.Mascots.Select(m => (MascotName(m), m)).ToArray(),
                               Config.Current.Appearance.Mascot, v => { Config.Current.Appearance.Mascot = v; SettingsChanged(); }));

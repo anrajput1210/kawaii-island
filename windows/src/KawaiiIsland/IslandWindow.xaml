@@ -16,7 +16,11 @@
     <Border x:Name="Pill" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,6,0,0"
             Background="{DynamicResource IslandBackground}" RenderTransformOrigin="0.5,0" Cursor="Hand">
         <Border.RenderTransform>
-            <ScaleTransform x:Name="HoverScale"/>
+            <TransformGroup>
+                <ScaleTransform x:Name="HoverScale"/>
+                <!-- Auto-hide: slides the pill off the docked edge (clipped by the window) -->
+                <TranslateTransform x:Name="HideShift"/>
+            </TransformGroup>
         </Border.RenderTransform>
         <Border.Effect>
             <DropShadowEffect x:Name="Shadow" BlurRadius="24" ShadowDepth="8" Direction="270" Opacity="0.45" Color="Black"/>
@@ -69,5 +73,20 @@
             </Grid>
         </Grid>
     </Border>
+
+    <!-- Auto-hidden: 3 px hover strip on the docked edge (alpha 1/255 so it still gets the mouse). -->
+    <Border x:Name="EdgeStrip" Background="#01000000" Visibility="Collapsed"/>
+
+    <!-- Auto-hidden + pointer on the edge: the mascot peeks out and says hi; clicking it opens the island. -->
+    <StackPanel x:Name="Peek" Orientation="Horizontal" Visibility="Collapsed" Cursor="Hand"
+                AutomationProperties.Name="Open the island">
+        <StackPanel.RenderTransform>
+            <TranslateTransform x:Name="PeekShift"/>
+        </StackPanel.RenderTransform>
+        <c:MascotControl x:Name="PeekMascot" Width="46" Height="46" Expression="wow"/>
+        <Border x:Name="PeekBubble" Margin="4,0" Padding="10,4" CornerRadius="12,12,12,4" Background="White" Opacity="0">
+            <TextBlock Text="hi 👋" Foreground="#2B2B4A" FontFamily="{DynamicResource IslandFont}" FontSize="12" FontWeight="Bold"/>
+        </Border>
+    </StackPanel>
     </Grid>
 </Window>

@@ -60,6 +60,10 @@ public partial class SettingsWindow : Window
         Field(PositionPanel, "Monitor", MonitorBox());
         Switch(PositionPanel, "Unlock to drag", "Drag the island anywhere; it snaps to edges and the centre line.",
                !w.Locked, on => { Island.SetLocked(!on); Later(Reload); });
+        Switch(PositionPanel, "Auto-hide in fullscreen", "Slides away for games, videos and slideshows. Hover the edge and the mascot peeks out.",
+               w.AutoHideFullscreen, on => Island.SetAutoHide(on, w.AutoHideAlways));
+        Switch(PositionPanel, "Auto-hide always", "Stays tucked away until you hover the edge.",
+               w.AutoHideAlways, on => Island.SetAutoHide(w.AutoHideFullscreen, on));
 
         BehaviorPanel.Children.Clear();
         Field(BehaviorPanel, "Collapse after", Segments(App.CollapseChoices, Island.AutoCollapseSeconds.ToString(),

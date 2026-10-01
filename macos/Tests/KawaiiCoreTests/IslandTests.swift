@@ -26,7 +26,7 @@ final class IslandTests: XCTestCase {
         let n = Notch(centerX: 0, width: 185, height: 38, isReal: true)
         XCTAssertEqual(IslandLayout.size(.resting, notch: n), CGSize(width: 185, height: 38))
         XCTAssertEqual(IslandLayout.size(.compact, notch: n).width, 185 + 2 * IslandLayout.side)
-        XCTAssertEqual(IslandLayout.size(.expanded(contentHeight: 120), notch: n), CGSize(width: 440, height: 158))
+        XCTAssertEqual(IslandLayout.size(.expanded(contentHeight: 120), notch: n), CGSize(width: 480, height: 158))
     }
 
     func testClock() {

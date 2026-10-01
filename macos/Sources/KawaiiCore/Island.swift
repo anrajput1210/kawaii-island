@@ -26,7 +26,7 @@ public struct Notch: Equatable {
 
 /// Live activities in iPhone priority order (higher wins the compact island; the runner-up becomes the minimal bubble).
 public enum ActivityKind: Int, Comparable, CaseIterable {
-    case music = 1, timer = 2, call = 3
+    case music = 1, timer = 2, code = 3, call = 4
     public static func < (a: Self, b: Self) -> Bool { a.rawValue < b.rawValue }
 }
 
@@ -48,7 +48,7 @@ public enum IslandLayout {
         case .resting: return CGSize(width: n.width, height: n.height)
         case .compact: return CGSize(width: n.width + 2 * side, height: n.height)
         case .hud: return CGSize(width: n.width + 2 * hudSide, height: n.height)
-        case .expanded(let h): return CGSize(width: max(n.width + 220, 440), height: n.height + h)
+        case .expanded(let h): return CGSize(width: max(n.width + 260, 480), height: n.height + h)
         }
     }
 }
@@ -62,6 +62,19 @@ public enum Format {
     }
 }
 
+public struct PinnedApp: Codable, Equatable, Hashable {
+    public var name: String
+    public var path: String   // /Applications/Foo.app
+    public init(name: String, path: String) { self.name = name; self.path = path }
+}
+
+public struct TaskItem: Codable, Equatable {
+    public var name: String
+    public var time: String
+    public var done = false
+    public init(name: String, time: String, done: Bool = false) { self.name = name; self.time = time; self.done = done }
+}
+
 /// Settings, stored as JSON in ~/Library/Application Support/KawaiiIsland/config.json (local only).
 public struct Config: Codable, Equatable {
     public var hoverToExpand = false
@@ -72,6 +85,16 @@ public struct Config: Codable, Equatable {
     public var capsLock = true
     public var calls = true
     public var music = true
+    // Parity with Windows
+    public var mascot = "kiko"              // a skin key from the mascot art, or "none"
+    public var apps: [PinnedApp] = []       // app shortcuts on the Home view
+    public var tasks: [TaskItem] = []       // Calendar tab
+    public var city = ""                    // weather (Open-Meteo); empty = no weather
+    public var fahrenheit = false
+    public var codeMode = false             // coding mode: hoodie mascot, agent status, Allow / Deny
+    public var codePort = 47811
+    public var calendar = true
+    public var system = true
 
     public init() {}
 
@@ -83,6 +106,13 @@ public struct Config: Codable, Equatable {
         charging = get(.charging, def.charging); bluetooth = get(.bluetooth, def.bluetooth)
         unlock = get(.unlock, def.unlock); capsLock = get(.capsLock, def.capsLock)
         calls = get(.calls, def.calls); music = get(.music, def.music)
+        mascot = (try? c.decodeIfPresent(String.self, forKey: .mascot)) ?? def.mascot
+        apps = (try? c.decodeIfPresent([PinnedApp].self, forKey: .apps)) ?? []
+        tasks = (try? c.decodeIfPresent([TaskItem].self, forKey: .tasks)) ?? []
+        city = (try? c.decodeIfPresent(String.self, forKey: .city)) ?? ""
+        fahrenheit = get(.fahrenheit, def.fahrenheit); codeMode = get(.codeMode, def.codeMode)
+        codePort = (try? c.decodeIfPresent(Int.self, forKey: .codePort)) ?? def.codePort
+        calendar = get(.calendar, def.calendar); system = get(.system, def.system)
     }
 
     public static func load(from dir: URL) -> Config {

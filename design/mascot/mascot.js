@@ -131,6 +131,18 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true"><rect x="12" y="28" width="40" height="28" rx="3.5" fill="#E8B98A" stroke="#B9824F" stroke-width="1.4"/>${lid}${faceParts}${blush(48)}</svg>`;
   }
 
-  const api = { face, layers, svg, box, SKINS, EXPRESSIONS: Object.keys(EYES), TRACKING: ['idle', 'surprised', 'wow'] };
+  // Composable pieces for the macOS app (gen.mjs → MascotData.swift), assembled exactly like layers().
+  function parts() {
+    const skins = {};
+    for (const [k, s] of Object.entries(SKINS)) {
+      const faces = {};
+      for (const ex of Object.keys(EYES))
+        faces[ex] = { eyes: EYES[ex](s.ey), over: blush(s.by) + ((s.mouth && s.mouth(ex, s.my)) || MOUTH[ex](s.my)) + (s.front || '') };
+      skins[k] = { name: s.name, kind: s.kind, back: s.back, glasses: strings + glasses(s.ey), faces };
+    }
+    return { skins, extra: EXTRA, hoodie };
+  }
+
+  const api = { face, layers, parts, svg, box, SKINS, EXPRESSIONS: Object.keys(EYES), TRACKING: ['idle', 'surprised', 'wow'] };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.Mascot = api;
 })(this);

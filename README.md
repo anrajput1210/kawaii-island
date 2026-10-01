@@ -15,6 +15,16 @@ A cute, customizable **Dynamic Island for Windows 11** (macOS version in progres
 - **Notifications mirroring** (toasts), **mail** headers over IMAP (unread count and latest 5; bodies are never downloaded), **app shortcuts** (drop a file on the island to pin it).
 - **5 mascots** (Kiko, Miso the cat, Bun the bunny, Bolt the robot, Ribbit the frog). They blink, peek out to say hi when the island is hidden, squish when clicked, and get dizzy if you click three times fast.
 - Drag to move, edge snapping, auto-hide in fullscreen, dark/light themes, Ctrl+Alt+I hotkey, tray icon.
+- **Code mode (Claude Code companion):** live status of your Claude Code sessions (thinking, which tool is running, needs your permission, done), plus context used, 5-hour and weekly plan usage with reset times, and session cost. See below.
+
+## Code mode (Claude Code)
+
+Turn it on from the tray: **Code mode (Claude Code)**. After you confirm, Kawaii Island adds a few entries to `~/.claude/settings.json` (a backup is saved as `settings.json.kawaii-backup`):
+
+- **Hooks** for session, prompt, tool, permission, notification and stop events. Each one is an `async` `curl` call to `http://127.0.0.1:47811/kawaii/hook`, so Claude Code never waits on them. There's no helper program that could go missing, and if the island isn't running the call just fails quietly.
+- **A status line**, but only if you don't already have one. It sends usage to the island and shows `🏝 ctx 23% · 5h 41% · wk 12%` in Claude Code. Plan usage (5-hour and weekly) comes from Claude Code's status line data, which is only available on Pro and Max plans.
+
+Turning Code mode off, or uninstalling the app (`KawaiiIsland.exe --uninstall-hooks`), removes exactly those entries and nothing else. Restart open Claude Code sessions after you toggle it, because hooks load when a session starts. The listener only accepts connections from this PC, and session data is kept in memory only.
 
 ## Privacy: everything stays on your device
 
@@ -52,6 +62,7 @@ Mascot art has a single source: `design/mascot/mascot.js`. Regenerate the SVGs a
 - [x] 2 · Animations: expand/collapse spring, hover, mascot moods
 - [x] 3 · Drag, snap, position persistence
 - [x] 4 · AppBar workspace reservation (+ collapse-after timeout: 4 / 10 / 15 / 30 s / never)
+- [x] Code mode: Claude Code companion (activity, context, 5-hour / weekly usage)
 - [ ] 5 · Settings window and right-click menu
 - [ ] 6 · Auto-hide in fullscreen and the mascot peek
 - [ ] 7 · Music (SMTC)

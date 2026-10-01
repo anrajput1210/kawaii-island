@@ -25,6 +25,12 @@
             <!-- Collapsed: mascot + clock -->
             <Grid x:Name="CollapsedPanel" Margin="11,0">
                 <c:MascotControl x:Name="MascotSmall" Width="24" Height="24" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                <!-- Code mode: status dot + what Claude is doing (compact 280x40 pill) -->
+                <StackPanel x:Name="CodeLinePanel" Orientation="Horizontal" Margin="32,0,72,0" VerticalAlignment="Center" Visibility="Collapsed">
+                    <Ellipse x:Name="CodeDot" Width="7" Height="7" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="CodeLine" Margin="7,0,0,0" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
+                               FontSize="12" FontWeight="Medium" TextTrimming="CharacterEllipsis" MaxWidth="150"/>
+                </StackPanel>
                 <TextBlock x:Name="Clock" HorizontalAlignment="Right" VerticalAlignment="Center"
                            Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
                            FontWeight="SemiBold" FontSize="13"/>
@@ -37,14 +43,28 @@
                 <StackPanel x:Name="ExpandedItems" Margin="18,14,18,14">
                     <DockPanel>
                         <c:MascotControl x:Name="MascotLarge" DockPanel.Dock="Right" Width="40" Height="40" VerticalAlignment="Top"/>
-                        <StackPanel>
+                        <StackPanel x:Name="ClockBlock">
                             <TextBlock x:Name="BigClock" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
                                        FontWeight="SemiBold" FontSize="34"/>
                             <TextBlock x:Name="DateText" Foreground="{DynamicResource IslandMuted}" FontFamily="{DynamicResource IslandFont}" FontSize="13"/>
                         </StackPanel>
+                        <!-- Code mode header -->
+                        <StackPanel x:Name="CodeHeader" Visibility="Collapsed">
+                            <TextBlock x:Name="CodeTitle" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
+                                       FontWeight="SemiBold" FontSize="15" TextTrimming="CharacterEllipsis"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                <Ellipse x:Name="CodeDotLarge" Width="8" Height="8" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="CodeStateText" Margin="7,0,0,0" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
+                                           FontSize="12" TextTrimming="CharacterEllipsis" MaxWidth="400"/>
+                            </StackPanel>
+                        </StackPanel>
                     </DockPanel>
-                    <TextBlock Margin="0,14,0,0" Text="Hi! Nothing new right now." Foreground="{DynamicResource IslandMuted}"
+                    <TextBlock x:Name="Greeting" Margin="0,14,0,0" Text="Hi! Nothing new right now." Foreground="{DynamicResource IslandMuted}"
                                FontFamily="{DynamicResource IslandFont}" FontSize="12"/>
+                    <!-- Code mode: context / 5-hour / weekly meters (built in IslandWindow.Code.cs) -->
+                    <UniformGrid x:Name="CodeMeters" Columns="3" Margin="0,14,0,0" Visibility="Collapsed"/>
+                    <TextBlock x:Name="CodeFooter" Margin="0,10,0,0" Visibility="Collapsed" Foreground="{DynamicResource IslandMuted}"
+                               FontFamily="{DynamicResource IslandFont}" FontSize="11"/>
                 </StackPanel>
             </Grid>
         </Grid>

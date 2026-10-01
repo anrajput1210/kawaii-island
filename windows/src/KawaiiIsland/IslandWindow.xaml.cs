@@ -39,6 +39,8 @@ public partial class IslandWindow : Window
     private nint _hwnd;
     private bool _expanded;
     private string? _mood; // null = normal; "wow" (hover), "annoyed" (poked), "dizzy" (3 quick pokes)
+    private string _baseExpression = "idle"; // what the face returns to when no mood is active (Code mode changes it)
+    private bool _compact; // 280x40 "compact-active" size (spec §2) while something is going on
 
     private WindowConfig Win => _config.Current.Window;
     private MascotControl[] Mascots => [MascotSmall, MascotLarge];
@@ -65,6 +67,7 @@ public partial class IslandWindow : Window
 
         _appBar.Docked += OnDocked;
         App.Cleanup += _appBar.Dispose; // crash or exit: never leave a reserved strip behind
+        InitCodeMode();
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -80,6 +83,7 @@ public partial class IslandWindow : Window
     {
         SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged; // static event: unsubscribe or leak
         _appBar.Dispose();
+        StopCodeMode();
         base.OnClosed(e);
     }
 
@@ -101,7 +105,8 @@ public partial class IslandWindow : Window
     private void UpdateClock()
     {
         var now = DateTime.Now;
-        Clock.Text = BigClock.Text = now.ToString("t");
+        BigClock.Text = now.ToString("t");
+        if (CodeLinePanel.Visibility != Visibility.Visible) Clock.Text = BigClock.Text; // Code mode shows usage there
         DateText.Text = now.ToString("dddd, MMMM d");
     }
 
@@ -299,11 +304,8 @@ public partial class IslandWindow : Window
         if (_expanded == expand) return;
         _expanded = expand;
 
-        var ease = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.35 };
-        var d = Motion.Ms(320);
-        Pill.BeginAnimation(WidthProperty, new DoubleAnimation(expand ? Win.ExpandedWidth : Win.CollapsedWidth, d) { EasingFunction = ease });
-        Pill.BeginAnimation(HeightProperty, new DoubleAnimation(expand ? Win.ExpandedHeight : Win.CollapsedHeight, d) { EasingFunction = ease });
-        BeginAnimation(PillRadiusProperty, new DoubleAnimation(expand ? Win.CornerRadius : Win.CollapsedHeight / 2, d) { EasingFunction = ease });
+        if (expand) AnimatePill(Win.ExpandedWidth, Win.ExpandedHeight, Win.CornerRadius);
+        else { var (w, h) = CollapsedSize(); AnimatePill(w, h, h / 2); }
 
         if (expand)
         {
@@ -323,6 +325,26 @@ public partial class IslandWindow : Window
     }
 
     public void ToggleExpanded() => SetExpanded(!_expanded);
+
+    /// <summary>Width, height and corner radius move together with a spring (BackEase, 320 ms).</summary>
+    private void AnimatePill(double width, double height, double radius)
+    {
+        var ease = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.35 };
+        var d = Motion.Ms(320);
+        Pill.BeginAnimation(WidthProperty, new DoubleAnimation(width, d) { EasingFunction = ease });
+        Pill.BeginAnimation(HeightProperty, new DoubleAnimation(height, d) { EasingFunction = ease });
+        BeginAnimation(PillRadiusProperty, new DoubleAnimation(radius, d) { EasingFunction = ease });
+    }
+
+    private (double W, double H) CollapsedSize() => _compact ? (280, 40) : (Win.CollapsedWidth, Win.CollapsedHeight);
+
+    /// <summary>Switches the resting size between collapsed (180x36) and compact-active (280x40).</summary>
+    private void SetCompact(bool compact)
+    {
+        if (_compact == compact) return;
+        _compact = compact;
+        if (!_expanded) { var (w, h) = CollapsedSize(); AnimatePill(w, h, h / 2); }
+    }
 
     private void ArmAutoCollapse()
     {
@@ -420,7 +442,13 @@ public partial class IslandWindow : Window
     private void SetMood(string? mood)
     {
         _mood = mood;
-        foreach (var m in Mascots) m.Expression = mood ?? "idle";
+        foreach (var m in Mascots) m.Expression = mood ?? _baseExpression;
+    }
+
+    private void SetBaseExpression(string expression)
+    {
+        _baseExpression = expression;
+        if (_mood is null) SetMood(null);
     }
 
     // ---------------- visibility ----------------

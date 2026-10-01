@@ -22,6 +22,8 @@ A cute, customizable **Dynamic Island for Windows 11** (macOS version in progres
 - **5 mascots** (Kiko, Miso the cat, Bun the bunny, Bolt the robot, Ribbit the frog). They blink, peek out to say hi when the island is hidden, squish when clicked, and get dizzy if you click three times fast.
 - **Widgets you choose** (Settings → Widgets): time, weather (Open-Meteo, no account), laptop battery and Bluetooth device batteries, in the resting pill and/or the open island.
 - **Apple-style live activities:** Timer (orange ring + countdown; start it from the right-click menu), charging / low-battery, volume level, Bluetooth connect with battery, Caps/Num Lock, and the orange/green mic/camera privacy dot. With two activities at once, the second sits in a small detached circle beside the pill, like iPhone's "minimal" state. Mouse wheel switches tabs; click the progress bar to seek.
+- **Calendar tab:** today's date with month progress, your **Google Calendar or Outlook** events (whichever account you signed in with for mail), and your own tasks ("Gym 5:30 PM"); a heads-up 10 minutes before each.
+- **System tab:** CPU, memory, disk, network, plus Lock · Sleep · Restart · Shut down. **Notch** shape option and an accent that follows Windows (and your wallpaper).
 - **Pinned apps from a real app list**: "+" opens your installed apps (desktop and Store, searchable), not a file browser.
 - Drag to move, edge snapping, auto-hide in fullscreen, dark/light themes, tray icon.
 - **Ctrl+Alt+I** opens and closes the island from anywhere (change it in Settings → Behavior). **Start with Windows** is on by default for installed builds.
@@ -151,7 +153,7 @@ A build without these shows "isn't available in this build" for Gmail/Outlook si
 
 ## Credits
 
-Several live-activity ideas (volume, charging, Bluetooth, Caps Lock, privacy dots, timer, wheel-to-switch, seek) come from **[Dynamic Island for Windows](https://github.com/devcode90/Dynamic-Island-for-Windows)**, the MIT-licensed Windhawk mod by Himanshu (devcode90) and contributors. Kawaii Island re-implements them in C#/WPF; no code was copied.
+Several live-activity ideas (volume, charging, Bluetooth, Caps Lock, privacy dots, timer, wheel-to-switch, seek) come from **[Dynamic Island for Windows](https://github.com/devcode90/Dynamic-Island-for-Windows)**, the MIT-licensed Windhawk mod by Himanshu (devcode90) and contributors. Tasks, month progress, the system monitor, the power controls, the notch shape and Windows-accent theming come from **[dynamic-island-for-windows](https://github.com/rajsriv/dynamic-island-for-windows)** (Python/PyQt) by rajsriv. Kawaii Island re-implements all of these in C#/WPF; no code was copied.
 
 ## License
 

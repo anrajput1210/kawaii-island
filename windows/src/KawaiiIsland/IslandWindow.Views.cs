@@ -9,7 +9,7 @@ namespace KawaiiIsland;
 /// </summary>
 public partial class IslandWindow
 {
-    private enum View { Home, Music, Code, Alerts, Mail, Apps, Timer }
+    private enum View { Home, Music, Code, Alerts, Mail, Apps, Timer, Calendar, System }
 
     private View _view = View.Home;
     private View? _picked;   // tab the user chose; null = automatic
@@ -81,7 +81,8 @@ public partial class IslandWindow
 
     private void RenderExpanded()
     {
-        bool code = CodeMode, music = _media is not null, alerts = _feed.Items.Count > 0, mail = _mail is not null, apps = AppsOn, timer = _timer.Active;
+        bool code = CodeMode, music = _media is not null, alerts = _feed.Items.Count > 0, mail = _mail is not null, apps = AppsOn, timer = _timer.Active,
+             calendar = CalendarOn, system = SystemOn;
         _view = _picked switch
         {
             View.Code when code => View.Code,
@@ -90,14 +91,24 @@ public partial class IslandWindow
             View.Mail when mail => View.Mail,
             View.Apps when apps => View.Apps,
             View.Timer when timer => View.Timer,
+            View.Calendar when calendar => View.Calendar,
+            View.System when system => View.System,
             _ when code && _codeBusy => View.Code,
             _ when timer => View.Timer,
             _ when _flash is not null => View.Alerts,
             _ when music && _media!.Playing => View.Music,
             _ => code ? View.Code : music ? View.Music : Unread > 0 ? View.Mail : alerts ? View.Alerts : View.Home,
         };
-        bool tabs = (code ? 1 : 0) + (music ? 1 : 0) + (alerts ? 1 : 0) + (mail ? 1 : 0) + (apps ? 1 : 0) + (timer ? 1 : 0) > 1;
-        bool header = _view is View.Music or View.Alerts or View.Mail or View.Apps or View.Timer;
+        bool tabs = (code ? 1 : 0) + (music ? 1 : 0) + (alerts ? 1 : 0) + (mail ? 1 : 0) + (apps ? 1 : 0) + (timer ? 1 : 0)
+                    + (calendar ? 1 : 0) + (system ? 1 : 0) > 1;
+        bool header = _view is View.Music or View.Alerts or View.Mail or View.Apps or View.Timer or View.Calendar or View.System;
+        TabCalendar.Visibility = Vis(calendar);
+        TabCalendar.IsChecked = _view == View.Calendar;
+        TabSystem.Visibility = Vis(system);
+        TabSystem.IsChecked = _view == View.System;
+        CalendarPanel.Visibility = Vis(_view == View.Calendar);
+        SystemPanel.Visibility = Vis(_view == View.System);
+        if (_view == View.System && _expanded) RenderSystem();
         TabTimer.Visibility = Vis(timer);
         TabTimer.IsChecked = _view == View.Timer;
         TimerPanel.Visibility = Vis(_view == View.Timer);

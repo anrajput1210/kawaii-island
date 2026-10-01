@@ -108,6 +108,8 @@ public sealed class AppConfig
         Modules.Code ??= new();
         Modules.Widgets ??= new();
         Modules.Widgets.City ??= "";
+        Modules.Widgets.Tasks ??= [];
+        Appearance.Shape = OneOf(Appearance.Shape, "pill", "pill", "notch");
         Modules.Code.Port = Math.Clamp(Modules.Code.Port, 1024, 65535);
         Modules.Notifications.Muted ??= [];
         Modules.Notifications.Source = OneOf(Modules.Notifications.Source, "windows", "windows", "mock");
@@ -125,7 +127,8 @@ public sealed class AppConfig
 
         Appearance.Theme = OneOf(Appearance.Theme, "dark", "dark", "light", "auto");
         Appearance.Mascot = OneOf(Appearance.Mascot, DefaultMascot, [.. Mascots, NoMascot]);
-        Behavior.AutoCollapseSeconds = Math.Clamp(Behavior.AutoCollapseSeconds, 0, 600); // 0 = never
+        // The open island always closes on its own unless music is playing (0 used to mean "never").
+        Behavior.AutoCollapseSeconds = Behavior.AutoCollapseSeconds == 0 ? 4 : Math.Clamp(Behavior.AutoCollapseSeconds, 2, 600);
         Modules.Mail.PollSeconds = Math.Clamp(Modules.Mail.PollSeconds, 15, 3600);
         Modules.Mail.Provider = OneOf(Modules.Mail.Provider, "mock", "mock", "imap", "google", "microsoft");
         Modules.Mail.GoogleClientId ??= ""; Modules.Mail.GoogleClientSecret ??= ""; Modules.Mail.MicrosoftClientId ??= "";
@@ -162,6 +165,15 @@ public sealed class AppearanceConfig
     public string Theme { get; set; } = "dark";
     public string Accent { get; set; } = "#FF8FB1";
     public string Mascot { get; set; } = AppConfig.DefaultMascot;
+    /// <summary>"pill" (floating, Apple) or "notch" (flush with the top edge, square top corners).</summary>
+    public string Shape { get; set; } = "pill";
+}
+
+public sealed class TaskItem
+{
+    public string Name { get; set; } = "";
+    public string Time { get; set; } = "";
+    public bool Done { get; set; }
 }
 
 public sealed class ModulesConfig
@@ -193,6 +205,11 @@ public sealed class WidgetsConfig
     public bool LiveBluetooth { get; set; } = true;
     public bool LiveKeys { get; set; } = true;
     public bool LivePrivacy { get; set; } = true;
+    /// <summary>Calendar tab: events from the signed-in Google/Outlook account + your own tasks.</summary>
+    public bool Calendar { get; set; } = true;
+    /// <summary>System tab: CPU, memory, disk, network, and Lock/Sleep/Restart/Shut down.</summary>
+    public bool ShowSystem { get; set; } = true;
+    public List<TaskItem> Tasks { get; set; } = [];
 }
 
 /// <summary>Code mode: Claude Code session companion. Listener is 127.0.0.1-only; data is kept in memory only.</summary>

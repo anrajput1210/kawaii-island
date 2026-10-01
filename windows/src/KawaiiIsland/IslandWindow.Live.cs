@@ -31,6 +31,7 @@ public partial class IslandWindow
     private (int Percent, bool Charging)? _lastPower;
     private bool? _caps, _num;
     private int _privacyCountdown;
+    private bool _revealedForHud; // the island was auto-hidden: it slid out just to show an alert
 
     public bool TimerActive => _timer.Active;
     public bool TimerRunning => _timer.Running;
@@ -98,9 +99,21 @@ public partial class IslandWindow
             var (mic, cam) = w.LivePrivacy ? PrivacyMonitor.Read() : (false, false);
             PrivacyDot.Fill = new SolidColorBrush(cam ? Color.FromRgb(0x30, 0xD1, 0x58) : Color.FromRgb(0xFF, 0x9F, 0x0A));
             PrivacyDot.Visibility = Vis(mic || cam);
+            CheckUpcoming(now);
         }
 
-        if (_hud is { } h && now >= h.Until) { _hud = null; RenderCompact(); }
+        // The open island stays open only while music plays; otherwise it closes on its own.
+        bool playing = _media is { Playing: true };
+        if (_expanded && playing) _autoCollapse.Stop();
+        else if (_expanded && !_autoCollapse.IsEnabled && !Pill.IsMouseOver && _approval is null) ArmAutoCollapse();
+
+        if (_hud is { } h && now >= h.Until)
+        {
+            _hud = null;
+            ExpandedHud.Visibility = Visibility.Collapsed;
+            RenderCompact();
+            if (_revealedForHud) { _revealedForHud = false; HideSoon(); } // slide back away
+        }
     }
 
     private void OnPowerModeChanged(object? sender, PowerModeChangedEventArgs e)
@@ -149,6 +162,15 @@ public partial class IslandWindow
     private void ShowHud(string glyph, Color tint, string text, string value, double? level, TimeSpan duration)
     {
         _hud = new Hud(glyph, tint, text, value, level, DateTimeOffset.Now + duration);
+        // Every alert is seen: an auto-hidden island slides out for it; an open island shows it as a corner chip.
+        if (_hidden && IsVisible) { _revealedForHud = true; SlidePill(hide: false); }
+        ExpandedHud.Visibility = Vis(_expanded);
+        XHudGlyph.Text = glyph;
+        XHudGlyph.Foreground = new SolidColorBrush(tint);
+        XHudTrack.Visibility = Vis(level is not null);
+        XHudFill.Background = new SolidColorBrush(tint);
+        XHudFill.Width = 90 * Math.Clamp(level ?? 0, 0, 1);
+        XHudText.Text = level is null && text.Length > 0 ? $"{text} · {value}" : value;
         HudGlyph.Text = glyph;
         HudGlyph.Foreground = new SolidColorBrush(tint);
         HudText.Text = text;
@@ -251,7 +273,8 @@ public partial class IslandWindow
     private void OnPillWheel(object sender, MouseWheelEventArgs e)
     {
         if (!_expanded) return;
-        var tabs = new[] { (TabMusic, View.Music), (TabCode, View.Code), (TabTimer, View.Timer), (TabAlerts, View.Alerts), (TabMail, View.Mail), (TabApps, View.Apps) }
+        var tabs = new[] { (TabMusic, View.Music), (TabCode, View.Code), (TabAlerts, View.Alerts), (TabMail, View.Mail), (TabApps, View.Apps),
+                           (TabTimer, View.Timer), (TabCalendar, View.Calendar), (TabSystem, View.System) } // same order as on screen
             .Where(t => t.Item1.Visibility == Visibility.Visible).ToList();
         if (tabs.Count < 2) return;
         int i = tabs.FindIndex(t => t.Item2 == _view);

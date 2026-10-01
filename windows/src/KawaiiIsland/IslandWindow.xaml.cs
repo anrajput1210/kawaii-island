@@ -25,7 +25,8 @@ public partial class IslandWindow : Window
         new PropertyMetadata(0.0, (d, e) =>
         {
             var w = (IslandWindow)d;
-            w.Pill.CornerRadius = new CornerRadius((double)e.NewValue);
+            double r = (double)e.NewValue;
+            w.Pill.CornerRadius = w.Notch ? new CornerRadius(0, 0, r, r) : new CornerRadius(r);
             w.SizeOutline();
         }));
 
@@ -45,6 +46,8 @@ public partial class IslandWindow : Window
     private bool _compact; // 280x40 "compact-active" size (spec §2) while something is going on
 
     private WindowConfig Win => _config.Current.Window;
+    /// <summary>Notch style (from the Python island's "Notch Nook"): flush with the top edge, square top corners.</summary>
+    private bool Notch => _config.Current.Appearance.Shape == "notch" && Anchor().V == VerticalAlignment.Top;
     private bool HasMascot => _config.Current.Appearance.Mascot != AppConfig.NoMascot;
     private MascotControl[] Mascots => [MascotSmall, MascotLarge, MascotTiny];
 
@@ -93,6 +96,7 @@ public partial class IslandWindow : Window
         InitShortcuts();
         InitWidgets();
         InitLive();
+        InitCalendar();
         _sleepTimer.Tick += (_, _) => UpdateSleepy();
         _sleepTimer.Start();
     }
@@ -224,12 +228,13 @@ public partial class IslandWindow : Window
         var (h, v) = Anchor();
         Pill.HorizontalAlignment = Outline.HorizontalAlignment = h;
         Pill.VerticalAlignment = Outline.VerticalAlignment = v;
-        Pill.Margin = new Thickness(h == HorizontalAlignment.Left ? Gap : 0, v == VerticalAlignment.Top ? Gap : 0,
+        Pill.Margin = new Thickness(h == HorizontalAlignment.Left ? Gap : 0, v == VerticalAlignment.Top && !Notch ? Gap : 0,
                                     h == HorizontalAlignment.Right ? Gap : 0, v == VerticalAlignment.Bottom ? Gap : 0);
         Outline.Margin = new Thickness(Pill.Margin.Left - 5, Pill.Margin.Top - 5, Pill.Margin.Right - 5, Pill.Margin.Bottom - 5);
         Pill.RenderTransformOrigin = new Point(h == HorizontalAlignment.Left ? 0 : h == HorizontalAlignment.Right ? 1 : 0.5,
                                                v == VerticalAlignment.Top ? 0 : v == VerticalAlignment.Bottom ? 1 : 0.5);
         ExpandedPanel.VerticalAlignment = v == VerticalAlignment.Bottom ? VerticalAlignment.Bottom : VerticalAlignment.Top;
+        Pill.CornerRadius = Notch ? new CornerRadius(0, 0, PillRadius, PillRadius) : new CornerRadius(PillRadius);
         AnchorEdgeParts();
     }
 
@@ -494,7 +499,8 @@ public partial class IslandWindow : Window
     {
         _autoCollapse.Stop();
         int seconds = _config.Current.Behavior.AutoCollapseSeconds;
-        if (!_expanded || seconds == 0 || Pill.IsMouseOver || _approval is not null) return;
+        if (seconds == 0) seconds = 4; // the island always closes by itself unless music is playing
+        if (!_expanded || Pill.IsMouseOver || _approval is not null || _media is { Playing: true }) return;
         _autoCollapse.Interval = TimeSpan.FromSeconds(seconds);
         _autoCollapse.Start();
     }
@@ -550,8 +556,7 @@ public partial class IslandWindow : Window
 
     private Color Accent()
     {
-        try { return (Color)ColorConverter.ConvertFromString(_config.Current.Appearance.Accent); }
-        catch (FormatException) { return Color.FromRgb(0xFF, 0x8F, 0xB1); }
+        return TryFindResource("Accent") is SolidColorBrush b ? b.Color : Color.FromRgb(0xFF, 0x8F, 0xB1); // "auto" = Windows accent
     }
 
     // ---------------- mascot reactions ----------------

@@ -15,13 +15,22 @@ public sealed record OAuthProvider(string Key, string Name, string AuthUrl, stri
 {
     public static readonly OAuthProvider Google = new("google", "Google",
         "https://accounts.google.com/o/oauth2/v2/auth", "https://oauth2.googleapis.com/token",
-        "https://mail.google.com/ openid email", "imap.gmail.com", "https://mail.google.com/", "access_type=offline&prompt=consent");
+        "https://mail.google.com/ openid email https://www.googleapis.com/auth/calendar.readonly", "imap.gmail.com", "https://mail.google.com/", "access_type=offline&prompt=consent");
 
     public static readonly OAuthProvider Microsoft = new("microsoft", "Microsoft",
         "https://login.microsoftonline.com/common/oauth2/v2.0/authorize", "https://login.microsoftonline.com/common/oauth2/v2.0/token",
         "https://outlook.office.com/IMAP.AccessAsUser.All offline_access openid email", "outlook.office365.com", "https://outlook.office.com/mail/", "prompt=select_account");
 
     public static OAuthProvider? For(string key) => key switch { "google" => Google, "microsoft" => Microsoft, _ => null };
+
+    /// <summary>Scopes asked at sign-in: mail plus calendar. Microsoft issues one token per resource, so Graph
+    /// (calendar) is consented here and fetched with its own token later.</summary>
+    public string ConsentScope => Key == "microsoft" ? Scope + " " + MicrosoftCalendarScope : Scope;
+
+    public const string MicrosoftCalendarScope = "https://graph.microsoft.com/Calendars.Read";
+
+    /// <summary>Token scope for reading the calendar.</summary>
+    public string CalendarScope => Key == "microsoft" ? MicrosoftCalendarScope + " offline_access" : Scope;
 
     /// <summary>Client ID/secret built into this copy of the app (see csproj); empty when the build has none.</summary>
     public (string Id, string Secret) BuiltInClient => (Metadata($"{Name}ClientId"), Metadata($"{Name}ClientSecret"));
@@ -45,7 +54,7 @@ public static class OAuth
 {
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(20) };
     private static readonly byte[] Entropy = "KawaiiIsland.oauth.v1"u8.ToArray();
-    private static (string Token, DateTimeOffset Expires)? _access;
+    private static readonly Dictionary<string, (string Token, DateTimeOffset Expires)> Access = [];
 
     // ---------------- sign-in ----------------
 
@@ -69,10 +78,10 @@ public static class OAuth
             if (query["code"] is not { } code) throw new OAuthException("No sign-in code came back. Please try again.");
 
             var tokens = await PostAsync(provider.TokenUrl, Form(clientId, clientSecret,
-                ("grant_type", "authorization_code"), ("code", code), ("code_verifier", verifier), ("redirect_uri", redirect)), timeout.Token);
+                ("grant_type", "authorization_code"), ("code", code), ("code_verifier", verifier), ("redirect_uri", redirect), ("scope", provider.Scope)), timeout.Token);
             string refresh = Str(tokens, "refresh_token");
             if (refresh.Length == 0) throw new OAuthException($"{provider.Name} didn't allow offline access. Please try again.");
-            Remember(tokens);
+            Remember(provider.Scope, tokens);
             return new OAuthAccount(provider.Key, EmailFromIdToken(Str(tokens, "id_token")), refresh);
         }
         catch (OperationCanceledException) { throw new OAuthException("Sign-in timed out. Please try again."); }
@@ -80,17 +89,18 @@ public static class OAuth
     }
 
     /// <summary>A fresh access token for IMAP (cached until 2 minutes before it expires). Saves a rotated refresh token.</summary>
-    public static async Task<string> AccessTokenAsync(OAuthProvider provider, OAuthAccount account, string clientId, string clientSecret, string directory, CancellationToken ct)
+    public static async Task<string> AccessTokenAsync(OAuthProvider provider, OAuthAccount account, string clientId, string clientSecret, string directory, CancellationToken ct, string? scope = null)
     {
-        if (_access is { } a && a.Expires > DateTimeOffset.Now.AddMinutes(2)) return a.Token;
+        scope ??= provider.Scope;
+        lock (Access) if (Access.TryGetValue(scope, out var a) && a.Expires > DateTimeOffset.Now.AddMinutes(2)) return a.Token;
         var tokens = await PostAsync(provider.TokenUrl, Form(clientId, clientSecret,
-            ("grant_type", "refresh_token"), ("refresh_token", account.RefreshToken), ("scope", provider.Scope)), ct);
+            ("grant_type", "refresh_token"), ("refresh_token", account.RefreshToken), ("scope", scope)), ct);
         if (Str(tokens, "refresh_token") is { Length: > 0 } rotated && rotated != account.RefreshToken)
             Save(directory, account with { RefreshToken = rotated });
-        return Remember(tokens);
+        return Remember(scope, tokens);
     }
 
-    public static void Forget() => _access = null;
+    public static void Forget() { lock (Access) Access.Clear(); }
 
     // ---------------- storage (DPAPI, current user) ----------------
 
@@ -108,7 +118,7 @@ public static class OAuth
         catch (Exception ex) when (ex is IOException or CryptographicException or JsonException or UnauthorizedAccessException) { return null; }
     }
 
-    public static void Delete(string directory) { File.Delete(FileIn(directory)); _access = null; }
+    public static void Delete(string directory) { File.Delete(FileIn(directory)); Forget(); }
 
     // ---------------- pieces (unit-tested) ----------------
 
@@ -119,7 +129,7 @@ public static class OAuth
 
     public static string AuthorizeUrl(OAuthProvider p, string clientId, string redirect, string challenge, string state) =>
         $"{p.AuthUrl}?response_type=code&client_id={Uri.EscapeDataString(clientId)}&redirect_uri={Uri.EscapeDataString(redirect)}" +
-        $"&scope={Uri.EscapeDataString(p.Scope)}&code_challenge={challenge}&code_challenge_method=S256&state={state}&{p.ExtraAuth}";
+        $"&scope={Uri.EscapeDataString(p.ConsentScope)}&code_challenge={challenge}&code_challenge_method=S256&state={state}&{p.ExtraAuth}";
 
     /// <summary>The "email" (or Microsoft "preferred_username") claim from an id_token. Signature isn't checked:
     /// the token came straight from the provider over TLS and is only used as a display name / IMAP user.</summary>
@@ -192,11 +202,11 @@ public static class OAuth
         return root;
     }
 
-    private static string Remember(JsonElement tokens)
+    private static string Remember(string scope, JsonElement tokens)
     {
         string token = Str(tokens, "access_token");
         int seconds = tokens.TryGetProperty("expires_in", out var e) && e.TryGetInt32(out var s) ? s : 3600;
-        _access = (token, DateTimeOffset.Now.AddSeconds(seconds));
+        lock (Access) Access[scope] = (token, DateTimeOffset.Now.AddSeconds(seconds));
         return token;
     }
 

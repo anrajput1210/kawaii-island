@@ -87,7 +87,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
                         <!-- No background shape: the selected tab is just bright, bold text -->
-                        <Border Background="Transparent" Padding="0,3" Margin="0,0,16,0">
+                        <Border Background="Transparent" Padding="0,3" Margin="0,0,13,0">
                             <ContentPresenter/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -205,6 +205,17 @@
                  Modules (music, mail, alerts, apps) replace the greeting in Phases 7–10. -->
             <Grid x:Name="ExpandedPanel" Visibility="Collapsed" Opacity="0"
                   HorizontalAlignment="Center" VerticalAlignment="Top">
+                <!-- Volume / live alerts while the island is open: a compact chip over the top-right corner -->
+                <Border x:Name="ExpandedHud" Panel.ZIndex="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,16,0" Padding="10,4"
+                        CornerRadius="10" Background="{DynamicResource IslandBackground}" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="XHudGlyph" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center"/>
+                        <Border x:Name="XHudTrack" Width="90" Height="4" CornerRadius="2" Margin="9,0" VerticalAlignment="Center" Background="{DynamicResource IslandTrack}">
+                            <Border x:Name="XHudFill" HorizontalAlignment="Left" CornerRadius="2" Width="0"/>
+                        </Border>
+                        <TextBlock x:Name="XHudText" VerticalAlignment="Center" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}" FontSize="12" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Border>
                 <StackPanel x:Name="ExpandedItems" Margin="18,14,18,14">
                     <!-- Header for module views: tabs (when needed) + small clock + mascot -->
                     <DockPanel x:Name="TabRow" Margin="0,0,0,8" Visibility="Collapsed">
@@ -220,6 +231,8 @@
                             <RadioButton x:Name="TabMail" Content="Mail" Style="{StaticResource Tab}" GroupName="view"/>
                             <RadioButton x:Name="TabApps" Content="Apps" Style="{StaticResource Tab}" GroupName="view"/>
                             <RadioButton x:Name="TabTimer" Content="Timer" Style="{StaticResource Tab}" GroupName="view"/>
+                            <RadioButton x:Name="TabCalendar" Content="Calendar" Style="{StaticResource Tab}" GroupName="view"/>
+                            <RadioButton x:Name="TabSystem" Content="System" Style="{StaticResource Tab}" GroupName="view"/>
                         </StackPanel>
                     </DockPanel>
                     <DockPanel x:Name="MainRow">
@@ -289,6 +302,31 @@
                                 <Button x:Name="NextButton" Style="{StaticResource Glyph}" Content="&#xE893;" FontSize="16" ToolTip="Next" AutomationProperties.Name="Next"/>
                             </StackPanel>
                         </Grid>
+                    </StackPanel>
+
+                    <!-- Calendar: date + month progress, then events (Google/Outlook) and your tasks, in time order -->
+                    <StackPanel x:Name="CalendarPanel" Visibility="Collapsed">
+                        <DockPanel>
+                            <TextBlock x:Name="MonthText" DockPanel.Dock="Right" VerticalAlignment="Bottom" Foreground="{DynamicResource IslandMuted}"
+                                       FontFamily="{DynamicResource IslandFont}" FontSize="11.5" FontWeight="Medium"/>
+                            <TextBlock x:Name="DayText" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}" FontSize="15" FontWeight="SemiBold"/>
+                        </DockPanel>
+                        <Border Height="3" CornerRadius="1.5" Margin="0,6,0,8" Background="{DynamicResource IslandTrack}">
+                            <Border x:Name="MonthFill" HorizontalAlignment="Left" CornerRadius="1.5" Background="{DynamicResource Accent}" Width="0"/>
+                        </Border>
+                        <StackPanel x:Name="AgendaList"/>
+                        <Button x:Name="AddTaskButton" Style="{StaticResource TextButton}" Content="+ Add task" HorizontalAlignment="Left" FontSize="12.5"/>
+                    </StackPanel>
+
+                    <!-- System: CPU / memory / disk / network, then Lock · Sleep · Restart · Shut down -->
+                    <StackPanel x:Name="SystemPanel" Visibility="Collapsed">
+                        <UniformGrid x:Name="SystemMeters" Columns="4"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button x:Name="LockButton" Style="{StaticResource TextButton}" Content="Lock" FontSize="12.5"/>
+                            <Button x:Name="SleepButton" Style="{StaticResource TextButton}" Content="Sleep" FontSize="12.5"/>
+                            <Button x:Name="RestartButton" Style="{StaticResource TextButton}" Content="Restart" FontSize="12.5"/>
+                            <Button x:Name="ShutDownButton" Style="{StaticResource TextButton}" Content="Shut down" FontSize="12.5"/>
+                        </StackPanel>
                     </StackPanel>
 
                     <!-- Timer (expanded): big countdown, Pause/Resume and Cancel as plain text buttons -->

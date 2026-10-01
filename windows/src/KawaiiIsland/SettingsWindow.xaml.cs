@@ -122,6 +122,8 @@ public partial class SettingsWindow : Window
         Field(AppearancePanel, "Theme", Segments([("Dark", "dark"), ("Light", "light"), ("Auto", "auto")], C.Appearance.Theme,
                v => { C.Appearance.Theme = v; _app.ApplyTheme(); _app.Config.SaveSoon(); }));
         Field(AppearancePanel, "Accent", Swatches());
+        Field(AppearancePanel, "Shape", Segments([("Pill", "pill"), ("Notch", "notch")], C.Appearance.Shape,
+               v => { C.Appearance.Shape = v; Changed(); }));
         Field(AppearancePanel, "Mascot", MascotPicker(), below: true);
 
         NotifyPanel.Children.Clear();
@@ -255,6 +257,7 @@ public partial class SettingsWindow : Window
                     var (id, secret) = Island.ClientFor(oauth);
                     OAuth.Save(dir, await OAuth.SignInAsync(oauth, id, secret, CancellationToken.None));
                     await Island.RestartMailAsync();
+                    await Island.RefreshCalendarAsync(); // same account: Google Calendar / Outlook calendar
                 }
                 catch (Exception ex) when (ex is OAuthException or System.Net.Http.HttpRequestException or System.ComponentModel.Win32Exception)
                 {
@@ -267,7 +270,7 @@ public partial class SettingsWindow : Window
         else
         {
             button.Content = "Sign out";
-            button.Click += async (_, _) => { OAuth.Delete(dir); await Island.RestartMailAsync(); Later(Reload); };
+            button.Click += async (_, _) => { OAuth.Delete(dir); await Island.RestartMailAsync(); await Island.RefreshCalendarAsync(); Later(Reload); };
             Field(MailSettingsPanel, $"Signed in as {(account.Email.Length > 0 ? account.Email : oauth.Name)}", button);
         }
 
@@ -291,6 +294,10 @@ public partial class SettingsWindow : Window
         Switch(HomeWidgetsPanel, "Laptop battery", "Charge and whether it's plugged in.", wg.HomeBattery, on => Home(() => wg.HomeBattery = on));
         Switch(HomeWidgetsPanel, "Bluetooth devices", "Battery of connected headphones, mice and controllers that report it (as in Windows Settings).",
                wg.HomeBluetooth, on => Home(() => wg.HomeBluetooth = on));
+        Switch(HomeWidgetsPanel, "Calendar", "Upcoming events from the Google or Outlook account you signed in with (Settings → Mail), plus your own tasks.",
+               wg.Calendar, on => Home(() => wg.Calendar = on));
+        Switch(HomeWidgetsPanel, "System", "CPU, memory, disk and network, with Lock, Sleep, Restart and Shut down.",
+               wg.ShowSystem, on => Home(() => wg.ShowSystem = on));
         Switch(HomeWidgetsPanel, "Pinned apps", "Your apps under the clock. Right-click one on the island to rename or remove it.",
                C.Modules.Shortcuts.Enabled, Island.SetShortcutsEnabled);
         var choose = new Button { Content = "Choose apps…", Padding = new Thickness(14, 5, 14, 5) };
@@ -461,9 +468,9 @@ public partial class SettingsWindow : Window
     private FrameworkElement Swatches()
     {
         var row = new WrapPanel();
-        foreach (var (name, hex) in Accents)
+        foreach (var (name, hex) in Accents.Append(("Windows accent (follows your wallpaper)", "auto")))
         {
-            var dot = new Ellipse { Width = 24, Height = 24, Fill = (Brush)new BrushConverter().ConvertFromString(hex)! };
+            var dot = new Ellipse { Width = 24, Height = 24, Fill = (Brush)new BrushConverter().ConvertFromString(hex == "auto" ? App.WindowsAccent() : hex)! };
             var rb = new RadioButton
             {
                 Content = dot, GroupName = "accent", Style = (Style)FindResource("Pick"), ToolTip = name,

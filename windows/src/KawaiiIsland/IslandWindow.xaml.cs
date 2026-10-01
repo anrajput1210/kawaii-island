@@ -49,6 +49,7 @@ public partial class IslandWindow : Window
     public IslandWindow(ConfigService config)
     {
         _config = config;
+        _feed = new(() => _config.Current.Modules.Notifications.Muted);
         InitializeComponent();
         ApplyConfig();
 
@@ -81,6 +82,8 @@ public partial class IslandWindow : Window
         InitCodeMode();
         InitAutoHide();
         InitMusic();
+        InitViews();
+        InitAlerts();
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -98,6 +101,7 @@ public partial class IslandWindow : Window
         _appBar.Dispose();
         StopCodeMode();
         _mediaService?.Dispose();
+        StopNotifications();
         base.OnClosed(e);
     }
 
@@ -125,6 +129,7 @@ public partial class IslandWindow : Window
         DateText.Text = now.ToString("dddd, MMMM d");
         SmallClock.Text = BigClock.Text;
         TickMusic();
+        TickAlerts();
     }
 
     // ---------------- placement (physical pixels via Win32; see Services/Native) ----------------

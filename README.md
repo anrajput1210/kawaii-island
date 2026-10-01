@@ -6,7 +6,7 @@ A cute, customizable **Dynamic Island for Windows 11** (macOS version in progres
 
 **It never covers your browser tabs.** The island reserves its own strip of screen as a Desktop AppBar, so maximized windows stop below it instead of sliding underneath.
 
-> **Status: early development.** Phases 1–7 (skeleton, animations, drag & snap, AppBar, settings, auto-hide, music) and Code mode are done. See [Roadmap](#roadmap). Try the design in your browser: open [`design/mockup/index.html`](design/mockup/index.html).
+> **Status: early development.** Phases 1–8 (skeleton, animations, drag & snap, AppBar, settings, auto-hide, music, notifications) and Code mode are done. See [Roadmap](#roadmap). Try the design in your browser: open [`design/mockup/index.html`](design/mockup/index.html).
 
 ## Features (planned for v0.1)
 
@@ -31,6 +31,7 @@ Turning Code mode off, or uninstalling the app (`KawaiiIsland.exe --uninstall-ho
 - No accounts, no cloud sync, no telemetry, no analytics.
 - Settings: `%LOCALAPPDATA%\KawaiiIsland\config.json` (local, not roaming). macOS: `~/Library/Application Support/KawaiiIsland/`.
 - Mail passwords are encrypted with Windows DPAPI (current user, this machine). On macOS they go in the login Keychain with iCloud sync disabled. They are never written to `config.json`.
+- Mirrored notifications are kept in memory only (last 20) and disappear when the app quits. Only the names of apps you mute are saved.
 - The only network traffic is to **your own mail server** if you turn on IMAP.
 
 ## Build & run (Windows)
@@ -66,7 +67,7 @@ Mascot art has a single source: `design/mascot/mascot.js`. Regenerate the SVGs a
 - [x] 5 · Settings window and right-click menu (live apply, dark/light/auto theme, accent, mascot picker)
 - [x] 6 · Auto-hide in fullscreen and the mascot peek
 - [x] 7 · Music (SMTC)
-- [ ] 8 · Notifications mirroring
+- [x] 8 · Notifications mirroring
 - [ ] 9 · Mail (mock, then IMAP)
 - [ ] 10 · App shortcuts and file drop
 - [ ] 11 · Polish, themes, start with Windows, logging
@@ -74,7 +75,7 @@ Mascot art has a single source: `design/mascot/mascot.js`. Regenerate the SVGs a
 
 ## Known limitations
 
-- Mirroring toast notifications needs app identity on Windows (MSIX or a sparse package). Without it, the module shows a short explanation instead.
+- **Notification mirroring and app identity.** Current Windows 11 builds let the unpackaged app read notifications once you allow it (Settings → Privacy & security → Notifications → *Let apps access your notifications*). Older builds only share them with apps that have package identity: install the MSIX build, or register a *sparse package* (an `AppxManifest.xml` with `uap10:AllowExternalContent`, signed, added with `Add-AppxPackage -ExternalLocation <install dir>`) so the plain `.exe` gets identity. Without access, Settings explains what to do and the rest of the island works normally. For demos, set `"modules": { "notifications": { "source": "mock" } }` in `config.json`.
 - Builds aren't code-signed yet, so Windows SmartScreen and macOS Gatekeeper will warn on first launch.
 
 ## License

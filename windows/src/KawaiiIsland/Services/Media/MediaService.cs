@@ -1,4 +1,3 @@
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -148,29 +147,12 @@ internal sealed class MediaService : IDisposable
     private static async Task<(ImageSource?, Color?)> LoadArtAsync(IRandomAccessStreamReference? thumbnail)
     {
         if (thumbnail is null) return (null, null);
-        using var winrt = await thumbnail.OpenReadAsync();
-        using var source = winrt.AsStreamForRead();
-        var bytes = new MemoryStream();
-        await source.CopyToAsync(bytes);
-
-        var art = Decode(bytes, 160);
-        var small = new FormatConvertedBitmap(Decode(bytes, 32), PixelFormats.Bgra32, null, 0);
+        var bytes = await WinRtImage.ReadAsync(thumbnail);
+        var art = WinRtImage.Decode(bytes, 160);
+        var small = new FormatConvertedBitmap(WinRtImage.Decode(bytes, 32), PixelFormats.Bgra32, null, 0);
         var pixels = new byte[small.PixelWidth * small.PixelHeight * 4];
         small.CopyPixels(pixels, small.PixelWidth * 4, 0);
         return (art, MediaMath.DominantColor(pixels));
-    }
-
-    private static BitmapImage Decode(MemoryStream bytes, int width)
-    {
-        bytes.Position = 0;
-        var img = new BitmapImage();
-        img.BeginInit();
-        img.CacheOption = BitmapCacheOption.OnLoad;
-        img.DecodePixelWidth = width;
-        img.StreamSource = bytes;
-        img.EndInit();
-        img.Freeze();
-        return img;
     }
 
     private void Publish()

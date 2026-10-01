@@ -77,6 +77,21 @@ public partial class SettingsWindow : Window
         Field(AppearancePanel, "Accent", Swatches());
         Field(AppearancePanel, "Mascot", MascotPicker());
 
+        NotifyPanel.Children.Clear();
+        var notify = C.Modules.Notifications;
+        Switch(NotifyPanel, "Show notifications",
+               Island.NotificationProblem ?? "Mirrors new Windows notifications on the island. They're kept in memory on this PC only.",
+               notify.Enabled, async on => { await Island.SetNotificationsEnabled(on); Later(Reload); });
+        if (Island.NotificationProblem is not null)
+        {
+            var open = new Button { Content = "Open Windows notification settings", Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 4, 0, 8), HorizontalAlignment = HorizontalAlignment.Left };
+            open.Click += (_, _) => Process.Start(new ProcessStartInfo("ms-settings:privacy-notifications") { UseShellExecute = true });
+            NotifyPanel.Children.Add(open);
+        }
+        Switch(NotifyPanel, "Do not disturb", "New notifications still show in the pill but don't open the island.",
+               notify.Dnd, Island.SetDnd);
+        Field(NotifyPanel, "Muted apps", MutedApps());
+
         CodePanel.Children.Clear();
         Switch(CodePanel, "Code mode (Claude Code)",
                $"Shows what Claude Code is doing, context used and plan usage left. Adds hooks to {ClaudeSettings.SettingsPath}; turning it off removes them.",
@@ -182,6 +197,22 @@ public partial class SettingsWindow : Window
             if (box.SelectedItem is ComboBoxItem { Tag: string device }) { C.Window.MonitorId = device; Changed(); }
         };
         return box;
+    }
+
+    /// <summary>One chip per muted app; clicking it unmutes.</summary>
+    private FrameworkElement MutedApps()
+    {
+        var muted = C.Modules.Notifications.Muted;
+        if (muted.Count == 0) return Label("None. Use \"Mute\" on a notification in the island to silence an app.", 11.5, "IslandMuted");
+        var row = new WrapPanel();
+        foreach (var app in muted.ToList())
+        {
+            var chip = new Button { Content = app + "  ✕", ToolTip = "Unmute " + app, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 0, 6, 6) };
+            AutomationProperties.SetName(chip, "Unmute " + app);
+            chip.Click += (_, _) => { Island.UnmuteApp(app); Later(Reload); };
+            row.Children.Add(chip);
+        }
+        return row;
     }
 
     private FrameworkElement Swatches()

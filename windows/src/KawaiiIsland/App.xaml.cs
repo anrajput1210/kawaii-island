@@ -146,6 +146,7 @@ public partial class App : Application
                               Config.Current.Appearance.Mascot, v => { Config.Current.Appearance.Mascot = v; SettingsChanged(); }));
         menu.Items.Add(Choice("Collapse after", CollapseChoices, island.AutoCollapseSeconds.ToString(), v => island.SetAutoCollapse(int.Parse(v))));
         menu.Items.Add(Check("Code mode (Claude Code)", island.CodeMode, SetCodeMode));
+        menu.Items.Add(Check("Do not disturb", island.Dnd, on => { island.SetDnd(on); _settings?.Reload(); }));
         menu.Items.Add(new Separator());
         menu.Items.Add(Item("Settings…", ShowSettings));
         menu.Items.Add(Item("Quit", Shutdown));
@@ -168,6 +169,9 @@ public partial class App : Application
     };
 
     /// <summary>Persist (debounced 500 ms) and re-apply to the island (debounced 150 ms, re-docks the AppBar).</summary>
+    /// <summary>Settings window shows state changed elsewhere (e.g. an app muted from the island).</summary>
+    internal void RefreshSettings() => _settings?.Reload();
+
     internal void SettingsChanged()
     {
         Config.SaveSoon();

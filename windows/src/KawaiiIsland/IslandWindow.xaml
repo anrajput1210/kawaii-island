@@ -30,6 +30,28 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Rounded text button (notification actions). -->
+        <Style x:Key="PillButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
+            <Setter Property="FontFamily" Value="{DynamicResource IslandFont}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{DynamicResource IslandTrack}" CornerRadius="99" Padding="14,6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <!-- Expanded-view tabs (only shown when more than one module has something to show). -->
         <Style x:Key="Tab" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{DynamicResource IslandMuted}"/>
@@ -86,6 +108,20 @@
                     <TextBlock x:Name="CodeLine" Margin="7,0,0,0" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
                                FontSize="12" FontWeight="Medium" TextTrimming="CharacterEllipsis" MaxWidth="150"/>
                 </StackPanel>
+                <!-- New notification (compact 280x40, ~4 s): app icon + title + body; the mascot moves to the right -->
+                <StackPanel x:Name="NotifLinePanel" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                    <Grid Width="24" Height="24">
+                        <Border x:Name="NotifIconBg" CornerRadius="7">
+                            <TextBlock x:Name="NotifLetter" Foreground="White" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border x:Name="NotifIcon" CornerRadius="7"/>
+                    </Grid>
+                    <TextBlock x:Name="NotifLine" Margin="8,0,0,0" VerticalAlignment="Center" MaxWidth="190" TextTrimming="CharacterEllipsis"
+                               FontFamily="{DynamicResource IslandFont}" FontSize="12">
+                        <Run x:Name="NotifLineTitle" FontWeight="SemiBold" Foreground="{DynamicResource IslandText}"/>
+                        <Run x:Name="NotifLineBody" Foreground="{DynamicResource IslandMuted}"/>
+                    </TextBlock>
+                </StackPanel>
                 <!-- Music (compact 280x40): album art + title, live equalizer on the right -->
                 <StackPanel x:Name="MusicLinePanel" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
                     <Border x:Name="MiniArt" Width="26" Height="26" CornerRadius="6"/>
@@ -111,6 +147,7 @@
                         <StackPanel x:Name="Tabs" Orientation="Horizontal" VerticalAlignment="Center">
                             <RadioButton x:Name="TabMusic" Content="Music" Style="{StaticResource Tab}" GroupName="view"/>
                             <RadioButton x:Name="TabCode" Content="Code" Style="{StaticResource Tab}" GroupName="view"/>
+                            <RadioButton x:Name="TabAlerts" Content="Alerts" Style="{StaticResource Tab}" GroupName="view"/>
                         </StackPanel>
                     </DockPanel>
                     <DockPanel x:Name="MainRow">
@@ -170,6 +207,37 @@
                                 <Button x:Name="NextButton" Style="{StaticResource Glyph}" Content="&#xE893;" FontSize="16" ToolTip="Next" AutomationProperties.Name="Next"/>
                             </StackPanel>
                         </Grid>
+                    </StackPanel>
+
+                    <!-- Alerts (spec §3.2): one notification at a time, ‹ › through the last 20 -->
+                    <StackPanel x:Name="AlertsPanel" Visibility="Collapsed">
+                        <DockPanel>
+                            <Grid Width="36" Height="36" VerticalAlignment="Top">
+                                <Border x:Name="AlertIconBg" CornerRadius="10">
+                                    <TextBlock x:Name="AlertLetter" Foreground="White" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <Border x:Name="AlertIcon" CornerRadius="10"/>
+                            </Grid>
+                            <StackPanel Margin="12,0,0,0">
+                                <TextBlock x:Name="AlertMeta" Foreground="{DynamicResource IslandMuted}" FontFamily="{DynamicResource IslandFont}" FontSize="10.5"/>
+                                <TextBlock x:Name="AlertTitle" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
+                                           FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock x:Name="AlertBody" Foreground="{DynamicResource IslandMuted}" FontFamily="{DynamicResource IslandFont}" FontSize="11.5"
+                                           TextWrapping="Wrap" TextTrimming="CharacterEllipsis" LineHeight="15" LineStackingStrategy="BlockLineHeight" MaxHeight="30"/>
+                            </StackPanel>
+                        </DockPanel>
+                        <DockPanel Margin="0,10,0,0">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button x:Name="AlertPrev" Style="{StaticResource Glyph}" Content="&#xE76B;" FontSize="11" ToolTip="Newer" AutomationProperties.Name="Newer notification"/>
+                                <TextBlock x:Name="AlertPos" VerticalAlignment="Center" MinWidth="34" TextAlignment="Center" Foreground="{DynamicResource IslandMuted}"
+                                           FontFamily="{DynamicResource IslandFont}" FontSize="11"/>
+                                <Button x:Name="AlertNext" Style="{StaticResource Glyph}" Content="&#xE76C;" FontSize="11" ToolTip="Older" AutomationProperties.Name="Older notification"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="MuteAppButton" Style="{StaticResource PillButton}"/>
+                                <Button x:Name="ClearAlertsButton" Style="{StaticResource PillButton}" Content="Clear all" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </DockPanel>
                     </StackPanel>
                 </StackPanel>
             </Grid>

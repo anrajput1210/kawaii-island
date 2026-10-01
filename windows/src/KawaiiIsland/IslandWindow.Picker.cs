@@ -22,7 +22,6 @@ public partial class IslandWindow
         public ImageSource? Icon => ShortcutLauncher.Icon(App.Path, iconDir);
     }
 
-    private const double PickerMaxHeight = 400;
     private bool _picking, _browsing;
 
     private void InitPicker()

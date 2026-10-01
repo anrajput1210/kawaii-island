@@ -16,7 +16,7 @@ namespace KawaiiIsland;
 
 public partial class IslandWindow : Window
 {
-    private const double ShadowMargin = 40, Gap = 6, SnapThreshold = 24;
+    private const double ShadowMargin = 40, Gap = 6, SnapThreshold = 24, MaxExpandedHeight = 400;
 
     /// <summary>Animatable stand-in for Pill.CornerRadius (CornerRadius itself has no animation type).
     /// Defaults to 0 so the first real value always fires the callback.</summary>
@@ -166,7 +166,7 @@ public partial class IslandWindow : Window
     private void ApplyConfig()
     {
         Width = Win.ExpandedWidth + ShadowMargin;
-        Height = Math.Max(Win.ExpandedHeight, PickerMaxHeight) + ShadowMargin; // room for Add apps; transparent area is click-through
+        Height = MaxExpandedHeight + ShadowMargin; // room for the tallest view; transparent area is click-through
         var (w, h) = RestSize;
         Pill.Width = w;
         Pill.Height = h;
@@ -464,11 +464,11 @@ public partial class IslandWindow : Window
     }
 
     /// <summary>Design guidelines "dynamic height": the expanded island wraps its content (84 px minimum),
-    /// up to the Expanded height from Settings.</summary>
+    /// so nothing is ever cut off; capped by the window's room.</summary>
     private double ExpandedHeightNow()
     {
         ExpandedItems.Measure(new Size(Win.ExpandedWidth, double.PositiveInfinity));
-        return Math.Clamp(Math.Ceiling(ExpandedItems.DesiredSize.Height), 84, _picking ? PickerMaxHeight : Win.ExpandedHeight);
+        return Math.Clamp(Math.Ceiling(ExpandedItems.DesiredSize.Height), 84, MaxExpandedHeight);
     }
 
     /// <summary>Content changed while open (new mail, tab switch…): grow or shrink to fit.</summary>

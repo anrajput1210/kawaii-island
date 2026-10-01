@@ -6,7 +6,7 @@
     "alignment": "Center",
     "x": 0, "y": 0,
     "collapsedWidth": 180, "collapsedHeight": 36,
-    "expandedWidth": 520, "expandedHeight": 180,
+    "expandedWidth": 520,
     "cornerRadius": 28, "opacity": 1.0,
     "locked": true,
     "appBarEnabled": true,

@@ -119,7 +119,6 @@ public sealed class AppConfig
         w.CollapsedWidth = Math.Clamp(w.CollapsedWidth, 120, 400);
         w.CollapsedHeight = Math.Clamp(w.CollapsedHeight, 24, 64);
         w.ExpandedWidth = Math.Clamp(w.ExpandedWidth, 300, 900);
-        w.ExpandedHeight = Math.Clamp(w.ExpandedHeight, 120, 400);
         w.CornerRadius = Math.Clamp(w.CornerRadius, 0, 60);
         w.Opacity = Math.Clamp(w.Opacity, 0.2, 1.0);
         w.DockEdge = OneOf(w.DockEdge, "Top", "Top", "Bottom", "Left", "Right");
@@ -151,7 +150,6 @@ public sealed class WindowConfig
     public double CollapsedWidth { get; set; } = 180;
     public double CollapsedHeight { get; set; } = 36;
     public double ExpandedWidth { get; set; } = 520;
-    public double ExpandedHeight { get; set; } = 180;
     public double CornerRadius { get; set; } = 28;
     public double Opacity { get; set; } = 1.0;
     public bool Locked { get; set; } = true;

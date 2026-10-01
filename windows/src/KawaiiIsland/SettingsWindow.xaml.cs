@@ -74,7 +74,6 @@ public partial class SettingsWindow : Window
         SliderRow(SizePanel, "Height", 28, 48, w.CollapsedHeight, v => w.CollapsedHeight = v);
         Heading(SizePanel, "Expanded");
         SliderRow(SizePanel, "Width", 440, 640, w.ExpandedWidth, v => w.ExpandedWidth = v);
-        SliderRow(SizePanel, "Height", 160, 240, w.ExpandedHeight, v => w.ExpandedHeight = v);
         Heading(SizePanel, "Shape");
         SliderRow(SizePanel, "Radius", 12, 44, w.CornerRadius, v => w.CornerRadius = v);
         SliderRow(SizePanel, "Opacity %", 40, 100, w.Opacity * 100, v => w.Opacity = v / 100);

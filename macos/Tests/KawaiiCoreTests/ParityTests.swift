@@ -4,7 +4,7 @@ import XCTest
 
 final class SVGTests: XCTestCase {
     func testShapesAndPaint() {
-        let shapes = SVG.parse(#"<g fill="#FFFFFF" stroke="#F3B6C8"><ellipse cx="23" cy="16" rx="6.5" ry="14"/></g><rect x="5" y="29" width="6" height="13" rx="2.5" fill="#8C98B3"/><path d="M20 39 Q24 42 28 39" stroke="#2B2B4A" stroke-width="2" stroke-linecap="round" fill="none"/>"#)
+        let shapes = SVG.parse(##"<g fill="#FFFFFF" stroke="#F3B6C8"><ellipse cx="23" cy="16" rx="6.5" ry="14"/></g><rect x="5" y="29" width="6" height="13" rx="2.5" fill="#8C98B3"/><path d="M20 39 Q24 42 28 39" stroke="#2B2B4A" stroke-width="2" stroke-linecap="round" fill="none"/>"##)
         XCTAssertEqual(shapes.count, 3)
         XCTAssertEqual(shapes[0].fill, 0xFFFFFF)               // inherited from <g>
         XCTAssertEqual(shapes[0].stroke, 0xF3B6C8)

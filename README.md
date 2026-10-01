@@ -1,6 +1,6 @@
 # Kawaii Island
 
-A cute, customizable **Dynamic Island for Windows 11** (macOS version in progress). A small pill docks at the top of your screen and expands with springy micro-animations to show music, notifications from any app and app shortcuts. A mascot reacts to what you do.
+A cute, customizable **Dynamic Island for Windows 11 and macOS**. A small pill docks at the top of your screen and expands with springy micro-animations to show music, notifications from any app and app shortcuts. A mascot reacts to what you do.
 
 <p align="center"><img src="design/mascot/icon.png" width="96" alt="Kiko, the default mascot"></p>
 
@@ -30,7 +30,7 @@ A cute, customizable **Dynamic Island for Windows 11** (macOS version in progres
 - Follows the [design guidelines](#design-guidelines): glanceable, quiet by default, message text hidden until you allow previews, height that fits its content, honours Windows "Animation effects".
 - **AI agent companion:** live status of Claude Code, Codex, Gemini CLI, Cursor or any agent that can run a hook (working, which tool, needs you, done), Allow / Deny on the island, plus context and plan usage for Claude Code. See [AI agents](#ai-agents-claude-code-codex-gemini-cli-cursor-aider).
 
-## Install (Windows 10 2004+ / Windows 11)
+## Install (Windows 10 2004+ / Windows 11 / macOS 13+)
 
 ```powershell
 npm install -g kawaii-island
@@ -89,15 +89,16 @@ Build the npm package (maintainers; needs the .NET 8 SDK): `cd installer/npm && 
 
 ## macOS
 
-The Mac app is the iPhone Dynamic Island, grown out of the MacBook's camera notch (a virtual notch on Macs and displays without one). Native Swift, macOS 13+, Apple silicon and Intel; download the DMG from the latest **build** run's artifacts.
+The Mac app is the iPhone Dynamic Island, grown out of the MacBook's camera notch: on a Mac with a notch it sits flush around the camera; on Macs and displays without one it's a regular island centred at the top. Native Swift, macOS 13+, Apple silicon and Intel. Install it with the same `npm install -g kawaii-island` + `kawaii-island install` (it goes to `~/Applications` and opens at login), or download the DMG from the latest **build** run's artifacts.
 
 - **Compact** (content on either side of the camera), **expanded** (click; hover optional), and the detached **minimal** bubble when two activities run.
 - **Calls:** FaceTime (including iPhone calls relayed to the Mac), Zoom, Teams, WhatsApp, Discord: duration, video indicator, Mute, Open, End.
 - **Music:** Apple Music and Spotify: artwork, waveform tinted by the art, scrubber, play/pause/skip.
 - **Timer**, **volume**, **charging / low battery**, **AirPods & Bluetooth connected**, **unlock**, **Caps Lock**.
-- Menu bar icon: start a timer, turn each source on or off, Open at Login.
+- **Same as Windows:** the 20 mascots (blink, wow on hover, squish, dizzy, sleepy, hoodie in coding mode), **coding mode** with the same local endpoints, Allow / Deny on the island and *Connect Claude Code*, **Home** (clock, weather, battery, your apps), **Add apps** inside the island and drop-a-file-to-pin, **Calendar** tasks, **System** tab, **Control+Option+I**.
+- Menu bar icon: start a timer, mascot, coding mode, Connect Claude Code, weather city, tabs, turn each source on or off, Open at Login.
 
-macOS has no public API for another app's call state, so a call shows once it's answered (call app running + microphone live); incoming calls ring through macOS's own banner. Third-party Live Activities (sports, deliveries, Maps) don't exist on the Mac.
+macOS has no public API for another app's call state, so a call shows once it's answered (call app running + microphone live); incoming calls ring through macOS's own banner. Third-party Live Activities (sports, deliveries, Maps) don't exist on the Mac, and macOS doesn't let one app read another app's notifications, so notification mirroring is Windows-only.
 
 ## Design guidelines
 

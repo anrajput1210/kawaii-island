@@ -91,9 +91,8 @@ public sealed class AppConfig
 {
     public const string DefaultMascot = "kiko";
     public static readonly string[] Mascots = ["kiko", "miso", "bun", "bolt", "ribbit"];
-    /// <summary>"none" hides the mascot; "custom" uses the user's own picture (copied to <see cref="CustomMascotPath"/>).</summary>
-    public const string NoMascot = "none", CustomMascot = "custom";
-    public static string CustomMascotPath => Path.Combine(ConfigService.DefaultDirectory, "custom-mascot");
+    /// <summary>"none" hides the mascot.</summary>
+    public const string NoMascot = "none";
 
     public int Version { get; set; } = 1;
     public WindowConfig Window { get; set; } = new();
@@ -123,8 +122,7 @@ public sealed class AppConfig
         w.Alignment = OneOf(w.Alignment, "Center", "Left", "Center", "Right", "Top", "Middle", "Bottom");
 
         Appearance.Theme = OneOf(Appearance.Theme, "dark", "dark", "light", "auto");
-        Appearance.Mascot = OneOf(Appearance.Mascot, DefaultMascot, [.. Mascots, NoMascot, CustomMascot]);
-        if (Appearance.Mascot == CustomMascot && !File.Exists(CustomMascotPath)) Appearance.Mascot = DefaultMascot;
+        Appearance.Mascot = OneOf(Appearance.Mascot, DefaultMascot, [.. Mascots, NoMascot]);
         Behavior.AutoCollapseSeconds = Math.Clamp(Behavior.AutoCollapseSeconds, 0, 600); // 0 = never
         Modules.Mail.PollSeconds = Math.Clamp(Modules.Mail.PollSeconds, 15, 3600);
         Modules.Mail.Provider = OneOf(Modules.Mail.Provider, "mock", "mock", "imap");

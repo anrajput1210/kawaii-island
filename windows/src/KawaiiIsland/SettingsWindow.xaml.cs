@@ -302,11 +302,9 @@ public partial class SettingsWindow : Window
     private FrameworkElement MascotPicker()
     {
         var row = new WrapPanel();
-        foreach (var key in (string[])[.. AppConfig.Mascots, AppConfig.CustomMascot, AppConfig.NoMascot])
+        foreach (var key in (string[])[.. AppConfig.Mascots, AppConfig.NoMascot])
         {
-            bool custom = key == AppConfig.CustomMascot;
             object face = key == AppConfig.NoMascot ? Label("Off", 12, "IslandMuted", bold: true)
-                        : custom && !System.IO.File.Exists(AppConfig.CustomMascotPath) ? Label("+ Yours", 12, "IslandMuted", bold: true)
                         : new Image { Width = 38, Height = 38, Source = MascotControl.Art(key, "idle") };
             if (face is TextBlock t) { t.Width = 38; t.Height = 38; t.TextAlignment = TextAlignment.Center; t.Padding = new Thickness(0, 11, 0, 0); }
             var rb = new RadioButton
@@ -316,10 +314,8 @@ public partial class SettingsWindow : Window
                 IsChecked = key == C.Appearance.Mascot,
             };
             AutomationProperties.SetName(rb, App.MascotName(key));
-            if (custom) rb.PreviewMouseLeftButtonUp += (_, _) => Later(PickCustomMascot); // click again to replace the picture
             rb.Checked += (_, _) =>
             {
-                if (custom && !System.IO.File.Exists(AppConfig.CustomMascotPath)) return; // PickCustomMascot sets it once chosen
                 C.Appearance.Mascot = key;
                 HeaderMascot.Source = MascotControl.Art(key, "happy");
                 Changed();
@@ -327,27 +323,6 @@ public partial class SettingsWindow : Window
             row.Children.Add(rb);
         }
         return row;
-    }
-
-    /// <summary>Copies the chosen picture into the app's local folder so the mascot survives the original moving.</summary>
-    private void PickCustomMascot()
-    {
-        var dialog = new Microsoft.Win32.OpenFileDialog { Title = "Choose your mascot", Filter = "Pictures|*.png;*.jpg;*.jpeg;*.bmp;*.gif" };
-        if (dialog.ShowDialog(this) != true) { Reload(); return; }
-        try
-        {
-            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(AppConfig.CustomMascotPath)!);
-            System.IO.File.Copy(dialog.FileName, AppConfig.CustomMascotPath, overwrite: true);
-        }
-        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
-        {
-            MessageBox.Show(this, "Couldn't use that picture: " + ex.Message, "Kawaii Island");
-            return;
-        }
-        MascotControl.ReloadCustom();
-        C.Appearance.Mascot = AppConfig.CustomMascot;
-        _app.SettingsChanged();
-        Reload();
     }
 
     private static TextBlock Label(string text, double size, string brushKey, bool bold = false, Thickness margin = default)

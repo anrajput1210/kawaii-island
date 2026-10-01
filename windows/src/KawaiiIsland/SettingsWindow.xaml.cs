@@ -306,7 +306,7 @@ public partial class SettingsWindow : Window
         {
             bool custom = key == AppConfig.CustomMascot;
             object face = key == AppConfig.NoMascot ? Label("Off", 12, "IslandMuted", bold: true)
-                        : custom && !System.IO.File.Exists(AppConfig.CustomMascotPath) ? Label("Custom", 11, "IslandMuted", bold: true)
+                        : custom && !System.IO.File.Exists(AppConfig.CustomMascotPath) ? Label("+ Yours", 12, "IslandMuted", bold: true)
                         : new Image { Width = 38, Height = 38, Source = MascotControl.Art(key, "idle") };
             if (face is TextBlock t) { t.Width = 38; t.Height = 38; t.TextAlignment = TextAlignment.Center; t.Padding = new Thickness(0, 11, 0, 0); }
             var rb = new RadioButton
@@ -332,19 +332,18 @@ public partial class SettingsWindow : Window
     /// <summary>Copies the chosen picture into the app's local folder so the mascot survives the original moving.</summary>
     private void PickCustomMascot()
     {
-        var dialog = new Microsoft.Win32.OpenFileDialog { Title = "Choose a custom mascot", Filter = "Pictures|*.png;*.jpg;*.jpeg;*.bmp;*.gif" };
+        var dialog = new Microsoft.Win32.OpenFileDialog { Title = "Choose your mascot", Filter = "Pictures|*.png;*.jpg;*.jpeg;*.bmp;*.gif" };
         if (dialog.ShowDialog(this) != true) { Reload(); return; }
         try
         {
-            Mouse.OverrideCursor = Cursors.Wait;
-            MascotImage.Import(dialog.FileName, AppConfig.CustomMascotPath); // background removed, trimmed, square PNG
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(AppConfig.CustomMascotPath)!);
+            System.IO.File.Copy(dialog.FileName, AppConfig.CustomMascotPath, overwrite: true);
         }
-        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or NotSupportedException or System.IO.FileFormatException or ArgumentException)
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
         {
             MessageBox.Show(this, "Couldn't use that picture: " + ex.Message, "Kawaii Island");
             return;
         }
-        finally { Mouse.OverrideCursor = null; }
         MascotControl.ReloadCustom();
         C.Appearance.Mascot = AppConfig.CustomMascot;
         _app.SettingsChanged();

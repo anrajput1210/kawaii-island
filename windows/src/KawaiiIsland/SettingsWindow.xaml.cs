@@ -299,6 +299,14 @@ public partial class SettingsWindow : Window
         Field(HomeWidgetsPanel, "Max pinned apps", Segments([("4", "4"), ("6", "6"), ("8", "8"), ("12", "12")], C.Modules.Shortcuts.Max.ToString(),
                v => { C.Modules.Shortcuts.Max = int.Parse(v); _app.Config.SaveSoon(); Island.SetShortcutsEnabled(C.Modules.Shortcuts.Enabled); }));
 
+        LivePanel.Children.Clear();
+        void Live(string title, string caption, bool value, Action<bool> set) => Switch(LivePanel, title, caption, value, on => { set(on); _app.Config.SaveSoon(); });
+        Live("Volume", "A level bar on the island when the volume changes.", wg.LiveVolume, on => wg.LiveVolume = on);
+        Live("Charging and low battery", "Green battery when you plug in; a warning at 20 % and 10 %.", wg.LiveBattery, on => wg.LiveBattery = on);
+        Live("Bluetooth devices", "Connected / disconnected, with battery when Windows knows it.", wg.LiveBluetooth, on => wg.LiveBluetooth = on);
+        Live("Caps Lock and Num Lock", "Shows On / Off when you press them.", wg.LiveKeys, on => wg.LiveKeys = on);
+        Live("Microphone and camera dot", "Orange dot while an app uses the microphone, green while one uses the camera.", wg.LivePrivacy, on => wg.LivePrivacy = on);
+
         WeatherPanel.Children.Clear();
         var city = new TextBox { Text = wg.City, Padding = new Thickness(6, 4, 6, 4), ToolTip = "Leave empty to use Windows location. Press Enter to apply." };
         StyleBox(city);

@@ -43,7 +43,7 @@ public static class AppCatalog
 }
 
 /// <summary>Current conditions for the weather widget.</summary>
-public sealed record WeatherNow(double Temperature, int Code, string Place, bool Fahrenheit)
+public sealed record WeatherNow(double Temperature, int Code, string Place, bool Fahrenheit, double? FeelsLike = null)
 {
     public string Text => $"{Math.Round(Temperature):0}°";
     public string Symbol => WeatherCodes.Symbol(Code);
@@ -90,7 +90,7 @@ public static class WeatherService
         var place = city.Trim().Length > 0 ? await GeocodeAsync(city.Trim()) : await WindowsLocationAsync();
         if (place is not { } p) return null;
         string url = string.Create(CultureInfo.InvariantCulture,
-            $"https://api.open-meteo.com/v1/forecast?latitude={p.Lat:0.0}&longitude={p.Lon:0.0}&current=temperature_2m,weather_code&temperature_unit={(fahrenheit ? "fahrenheit" : "celsius")}");
+            $"https://api.open-meteo.com/v1/forecast?latitude={p.Lat:0.0}&longitude={p.Lon:0.0}&current=temperature_2m,weather_code,apparent_temperature&temperature_unit={(fahrenheit ? "fahrenheit" : "celsius")}");
         using var doc = JsonDocument.Parse(await Http.GetStringAsync(url));
         return ParseCurrent(doc.RootElement, p.Name, fahrenheit);
     }
@@ -98,7 +98,8 @@ public static class WeatherService
     /// <summary>Unit-tested against Open-Meteo's documented response shape.</summary>
     public static WeatherNow? ParseCurrent(JsonElement root, string place, bool fahrenheit) =>
         root.TryGetProperty("current", out var c) && c.TryGetProperty("temperature_2m", out var t) && c.TryGetProperty("weather_code", out var w)
-            ? new WeatherNow(t.GetDouble(), w.GetInt32(), place, fahrenheit)
+            ? new WeatherNow(t.GetDouble(), w.GetInt32(), place, fahrenheit,
+                             c.TryGetProperty("apparent_temperature", out var f) && f.ValueKind == JsonValueKind.Number ? f.GetDouble() : null)
             : null;
 
     private static async Task<(double Lat, double Lon, string Name)?> GeocodeAsync(string city)

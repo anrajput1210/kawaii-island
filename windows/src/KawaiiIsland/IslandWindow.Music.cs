@@ -29,7 +29,7 @@ public partial class IslandWindow
 
     private void InitMusic()
     {
-        _eqBars = [.. BuildEq(Eq), .. BuildEq(BigEq)];
+        _eqBars = [.. BuildEq(Eq), .. BuildEq(BigEq), .. BuildEq(BubbleEq)];
         PrevButton.Click += (_, _) => _mediaService?.Previous();
         PlayButton.Click += (_, _) => _mediaService?.PlayPause();
         NextButton.Click += (_, _) => _mediaService?.Next();

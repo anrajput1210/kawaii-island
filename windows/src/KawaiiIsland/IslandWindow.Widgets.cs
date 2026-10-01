@@ -46,6 +46,7 @@ public partial class IslandWindow
     private async Task RefreshDevicesAsync()
     {
         _battery = Win32.Battery();
+        CheckBattery(); // slow drains: 20 % / 10 % alerts
         if (Widgets.HomeBluetooth) _bluetooth = await BluetoothBatteries.ReadAsync();
         RenderWidgets();
     }
@@ -78,7 +79,9 @@ public partial class IslandWindow
         // expanded Home tiles
         HomeWidgets.Children.Clear();
         if (Widgets.HomeWeather && _weather is { } weather)
-            AddTile(weather.Symbol + " " + weather.Text, weather.Condition + (weather.Place == "Here" ? "" : " · " + weather.Place), null);
+            AddTile(weather.Symbol + " " + weather.Text,
+                    weather.FeelsLike is { } feels && Math.Abs(feels - weather.Temperature) >= 2 ? $"{weather.Condition} · feels {Math.Round(feels):0}°"
+                    : weather.Condition + (weather.Place == "Here" ? "" : " · " + weather.Place), null);
         if (Widgets.HomeBattery && _battery is { } battery)
             AddTile($"{battery.Percent}%", battery.Charging ? "Charging" : "Battery", BatteryGlyph(battery.Percent, battery.Charging));
         if (Widgets.HomeBluetooth)

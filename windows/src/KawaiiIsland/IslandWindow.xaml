@@ -148,6 +148,28 @@
                         <Run x:Name="NotifLineBody" Foreground="{DynamicResource IslandMuted}"/>
                     </TextBlock>
                 </StackPanel>
+                <!-- Live alert (volume, charging, Bluetooth, Caps Lock): glyph + text or level bar + value, a few seconds -->
+                <DockPanel x:Name="HudPanel" Visibility="Collapsed" VerticalAlignment="Center" LastChildFill="True">
+                    <TextBlock x:Name="HudGlyph" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15" VerticalAlignment="Center" Margin="2,0,10,0"/>
+                    <TextBlock x:Name="HudValue" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="10,0,2,0"
+                               Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}" FontWeight="SemiBold" FontSize="12.5"/>
+                    <Grid VerticalAlignment="Center">
+                        <TextBlock x:Name="HudText" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource IslandText}"
+                                   FontFamily="{DynamicResource IslandFont}" FontWeight="Medium" FontSize="12.5"/>
+                        <Border x:Name="HudTrack" Height="5" CornerRadius="2.5" Background="{DynamicResource IslandTrack}" Visibility="Collapsed">
+                            <Border x:Name="HudFill" HorizontalAlignment="Left" CornerRadius="2.5" Width="0"/>
+                        </Border>
+                    </Grid>
+                </DockPanel>
+                <!-- Timer live activity (compact): orange ring + countdown -->
+                <StackPanel x:Name="TimerLinePanel" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                    <Grid Width="20" Height="20">
+                        <Ellipse Stroke="#4DFF9F0A" StrokeThickness="2.5"/>
+                        <Path x:Name="TimerArc" Stroke="#FF9F0A" StrokeThickness="2.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                    </Grid>
+                    <TextBlock x:Name="TimerLine" Margin="9,0,0,0" VerticalAlignment="Center" Foreground="#FF9F0A"
+                               FontFamily="{DynamicResource IslandFont}" FontWeight="SemiBold" FontSize="13.5"/>
+                </StackPanel>
                 <!-- Music (compact 280x40): album art + title, live equalizer on the right -->
                 <StackPanel x:Name="MusicLinePanel" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
                     <Border x:Name="MiniArt" Width="26" Height="26" CornerRadius="6"/>
@@ -174,6 +196,8 @@
                     <TextBlock x:Name="Clock" VerticalAlignment="Center"
                                Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
                                FontWeight="SemiBold" FontSize="13"/>
+                    <!-- Privacy indicator (as on iPhone): orange = microphone in use, green = camera in use -->
+                    <Ellipse x:Name="PrivacyDot" Width="7" Height="7" Margin="8,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
                 </StackPanel>
             </Grid>
 
@@ -195,6 +219,7 @@
                             <RadioButton x:Name="TabAlerts" Content="Alerts" Style="{StaticResource Tab}" GroupName="view"/>
                             <RadioButton x:Name="TabMail" Content="Mail" Style="{StaticResource Tab}" GroupName="view"/>
                             <RadioButton x:Name="TabApps" Content="Apps" Style="{StaticResource Tab}" GroupName="view"/>
+                            <RadioButton x:Name="TabTimer" Content="Timer" Style="{StaticResource Tab}" GroupName="view"/>
                         </StackPanel>
                     </DockPanel>
                     <DockPanel x:Name="MainRow">
@@ -266,6 +291,18 @@
                         </Grid>
                     </StackPanel>
 
+                    <!-- Timer (expanded): big countdown, Pause/Resume and Cancel as plain text buttons -->
+                    <DockPanel x:Name="TimerPanel" Visibility="Collapsed" Margin="0,4,0,0">
+                        <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center">
+                            <Button x:Name="TimerPauseButton" Style="{StaticResource TextButton}" Foreground="#FF9F0A" FontSize="13.5"/>
+                            <Button x:Name="TimerCancelButton" Style="{StaticResource TextButton}" Content="Cancel" FontSize="13.5"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Timer" Foreground="{DynamicResource IslandMuted}" FontFamily="{DynamicResource IslandFont}" FontSize="12.5" FontWeight="Medium"/>
+                            <TextBlock x:Name="TimerBig" Foreground="#FF9F0A" FontFamily="{DynamicResource IslandFont}" FontSize="40" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </DockPanel>
+
                     <!-- App shortcuts (spec §3.4): pinned apps, + to add; drop files on the island to pin, drag a tile to reorder -->
                     <WrapPanel x:Name="AppsPanel" Margin="-2,10,0,0" Visibility="Collapsed"/>
 
@@ -311,6 +348,20 @@
                     </StackPanel>
                 </StackPanel>
             </Grid>
+        </Grid>
+    </Border>
+
+    <!-- Apple "minimal" state: with two live activities, the second sits in a detached circle beside the pill -->
+    <Border x:Name="Bubble" Width="36" Height="36" CornerRadius="18" Background="{DynamicResource IslandBackground}" BorderThickness="1"
+            Visibility="Collapsed" Opacity="0" IsHitTestVisible="False">
+        <Border.RenderTransform><TranslateTransform x:Name="BubbleShift"/></Border.RenderTransform>
+        <Grid>
+            <Grid x:Name="BubbleRing" Width="20" Height="20">
+                <Ellipse Stroke="#4DFF9F0A" StrokeThickness="2.5"/>
+                <Path x:Name="BubbleArc" Stroke="#FF9F0A" StrokeThickness="2.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+            </Grid>
+            <StackPanel x:Name="BubbleEq" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Height="14"/>
+            <Ellipse x:Name="BubbleDot" Width="9" Height="9"/>
         </Grid>
     </Border>
 

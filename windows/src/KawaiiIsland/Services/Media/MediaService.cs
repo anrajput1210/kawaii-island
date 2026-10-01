@@ -67,6 +67,7 @@ internal sealed class MediaService : IDisposable
     public void PlayPause() => Send(s => s.TryTogglePlayPauseAsync());
     public void Next() => Send(s => s.TrySkipNextAsync());
     public void Previous() => Send(s => s.TrySkipPreviousAsync());
+    public void Seek(TimeSpan position) => Send(s => s.TryChangePlaybackPositionAsync(position.Ticks));
 
 
     private async void Send(Func<Session, IAsyncOperation<bool>> command)

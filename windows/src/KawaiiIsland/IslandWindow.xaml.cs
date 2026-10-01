@@ -92,6 +92,7 @@ public partial class IslandWindow : Window
         InitMail();
         InitShortcuts();
         InitWidgets();
+        InitLive();
         _sleepTimer.Tick += (_, _) => UpdateSleepy();
         _sleepTimer.Start();
     }
@@ -153,6 +154,7 @@ public partial class IslandWindow : Window
         _mediaService?.Dispose();
         StopNotifications();
         _mail?.Dispose();
+        StopLive();
         base.OnClosed(e);
     }
 

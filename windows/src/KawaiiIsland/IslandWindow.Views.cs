@@ -9,7 +9,7 @@ namespace KawaiiIsland;
 /// </summary>
 public partial class IslandWindow
 {
-    private enum View { Home, Music, Code, Alerts, Mail, Apps }
+    private enum View { Home, Music, Code, Alerts, Mail, Apps, Timer }
 
     private View _view = View.Home;
     private View? _picked;   // tab the user chose; null = automatic
@@ -32,27 +32,43 @@ public partial class IslandWindow
     private void RenderCompact()
     {
         bool dropping = _dropText is not null; // file dragged over: mascot box + "Feed me!" wins
-        bool code = _codeBusy && !dropping;
-        bool flash = !code && !dropping && _flash is not null;
-        bool music = !code && !flash && !dropping && _media is { Playing: true };
+        bool hud = !dropping && _hud is not null; // brief live alert (volume, charging, Bluetooth, Caps Lock)
+        bool code = _codeBusy && !dropping && !hud;
+        bool flash = !code && !dropping && !hud && _flash is not null;
+        bool timer = !code && !flash && !dropping && !hud && _timer.Active;
+        bool music = !code && !flash && !dropping && !hud && !timer && _media is { Playing: true };
         bool minimal = SideDocked; // 44 px circle: one live thing (EQ while music plays, else the mascot)
-        SetCompact(!minimal && (code || flash || music));
+        SetCompact(!minimal && (code || flash || music || hud || timer));
+        HudPanel.Visibility = Vis(hud && !minimal);
+        TimerLinePanel.Visibility = Vis(timer && !minimal);
+
+        // Apple "minimal": a second ongoing activity gets the detached circle beside the pill.
+        var ongoing = new List<string>();
+        if (_codeBusy) ongoing.Add("code");
+        if (_timer.Active) ongoing.Add("timer");
+        if (_media is { Playing: true }) ongoing.Add("music");
+        bool primaryOngoing = code || timer || music;
+        string? second = primaryOngoing ? ongoing.Skip(1).FirstOrDefault() : (hud || flash) ? ongoing.FirstOrDefault() : null;
+        var (cw, ch) = CollapsedSize();
+        RenderBubble(second, cw, ch);
         CollapsedPanel.Margin = new Thickness(minimal ? 0 : 11, 0, minimal ? 0 : 11, 0);
         CodeLinePanel.Visibility = Vis(code && !minimal);
         NotifLinePanel.Visibility = Vis(flash && !minimal);
         MusicLinePanel.Visibility = Vis(music && !minimal);
         Eq.Visibility = Vis(music);
         Eq.HorizontalAlignment = minimal ? HorizontalAlignment.Center : HorizontalAlignment.Right;
-        MascotSmall.Visibility = Vis(!music && (HasMascot || dropping));
+        MascotSmall.Visibility = Vis(!music && !hud && !timer && (HasMascot || dropping));
         MascotSmall.HorizontalAlignment = minimal ? HorizontalAlignment.Center : flash ? HorizontalAlignment.Right : HorizontalAlignment.Left;
-        bool rest = !minimal && !music && !flash && !code && !dropping; // plain resting pill: user-chosen widgets
-        Clock.Visibility = Vis(!minimal && !music && !flash && (Widgets.PillClock || code || dropping));
+        bool rest = !minimal && !music && !flash && !code && !dropping && !hud && !timer; // plain resting pill: user-chosen widgets
+        Clock.Visibility = Vis(!minimal && !music && !flash && !hud && !timer && (Widgets.PillClock || code || dropping));
         PillWeather.Visibility = Vis(rest && Widgets.PillWeather && _weather is not null);
         PillBattery.Visibility = Vis(rest && Widgets.PillBattery && _battery is not null);
-        MailBadge.Visibility = Vis(!minimal && !music && !flash && !code && !dropping && Unread > 0);
+        MailBadge.Visibility = Vis(rest && Unread > 0);
 
         // Key line takes the tint of the active content (design guidelines: "Shell").
-        Color? tint = code ? CodeColor(_tracker.Active?.State)
+        Color? tint = hud ? _hud!.Tint == Colors.White ? null : _hud.Tint
+                    : timer ? TimerOrange
+                    : code ? CodeColor(_tracker.Active?.State)
                     : flash ? AvatarColor(_flash!.App)
                     : music ? MusicTint
                     : Unread > 0 ? MailTint
@@ -65,7 +81,7 @@ public partial class IslandWindow
 
     private void RenderExpanded()
     {
-        bool code = CodeMode, music = _media is not null, alerts = _feed.Items.Count > 0, mail = _mail is not null, apps = AppsOn;
+        bool code = CodeMode, music = _media is not null, alerts = _feed.Items.Count > 0, mail = _mail is not null, apps = AppsOn, timer = _timer.Active;
         _view = _picked switch
         {
             View.Code when code => View.Code,
@@ -73,13 +89,18 @@ public partial class IslandWindow
             View.Alerts when alerts => View.Alerts,
             View.Mail when mail => View.Mail,
             View.Apps when apps => View.Apps,
+            View.Timer when timer => View.Timer,
             _ when code && _codeBusy => View.Code,
+            _ when timer => View.Timer,
             _ when _flash is not null => View.Alerts,
             _ when music && _media!.Playing => View.Music,
             _ => code ? View.Code : music ? View.Music : Unread > 0 ? View.Mail : alerts ? View.Alerts : View.Home,
         };
-        bool tabs = (code ? 1 : 0) + (music ? 1 : 0) + (alerts ? 1 : 0) + (mail ? 1 : 0) + (apps ? 1 : 0) > 1;
-        bool header = _view is View.Music or View.Alerts or View.Mail or View.Apps;
+        bool tabs = (code ? 1 : 0) + (music ? 1 : 0) + (alerts ? 1 : 0) + (mail ? 1 : 0) + (apps ? 1 : 0) + (timer ? 1 : 0) > 1;
+        bool header = _view is View.Music or View.Alerts or View.Mail or View.Apps or View.Timer;
+        TabTimer.Visibility = Vis(timer);
+        TabTimer.IsChecked = _view == View.Timer;
+        TimerPanel.Visibility = Vis(_view == View.Timer);
         TabRow.Visibility = Vis(tabs || header);
         Tabs.Visibility = Vis(tabs);
         TabMusic.Visibility = Vis(music);

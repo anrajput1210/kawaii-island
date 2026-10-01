@@ -21,6 +21,7 @@ A cute, customizable **Dynamic Island for Windows 11** (macOS version in progres
 - **Notifications mirroring** (toasts), **mail** headers over IMAP (unread count and latest 5; bodies are never downloaded), **app shortcuts** (drop a file on the island to pin it).
 - **5 mascots** (Kiko, Miso the cat, Bun the bunny, Bolt the robot, Ribbit the frog). They blink, peek out to say hi when the island is hidden, squish when clicked, and get dizzy if you click three times fast.
 - **Widgets you choose** (Settings → Widgets): time, weather (Open-Meteo, no account), laptop battery and Bluetooth device batteries, in the resting pill and/or the open island.
+- **Apple-style live activities:** Timer (orange ring + countdown; start it from the right-click menu), charging / low-battery, volume level, Bluetooth connect with battery, Caps/Num Lock, and the orange/green mic/camera privacy dot. With two activities at once, the second sits in a small detached circle beside the pill, like iPhone's "minimal" state. Mouse wheel switches tabs; click the progress bar to seek.
 - **Pinned apps from a real app list**: "+" opens your installed apps (desktop and Store, searchable), not a file browser.
 - Drag to move, edge snapping, auto-hide in fullscreen, dark/light themes, tray icon.
 - **Ctrl+Alt+I** opens and closes the island from anywhere (change it in Settings → Behavior). **Start with Windows** is on by default for installed builds.
@@ -147,6 +148,10 @@ A build without these shows "isn't available in this build" for Gmail/Outlook si
 
 - **Notification mirroring and app identity.** Current Windows 11 builds let the unpackaged app read notifications once you allow it (Settings → Privacy & security → Notifications → *Let apps access your notifications*). Older builds only share them with apps that have package identity: install the MSIX build, or register a *sparse package* (an `AppxManifest.xml` with `uap10:AllowExternalContent`, signed, added with `Add-AppxPackage -ExternalLocation <install dir>`) so the plain `.exe` gets identity. Without access, Settings explains what to do and the rest of the island works normally. For demos, set `"modules": { "notifications": { "source": "mock" } }` in `config.json`.
 - Builds aren't code-signed yet, so Windows SmartScreen and macOS Gatekeeper will warn on first launch.
+
+## Credits
+
+Several live-activity ideas (volume, charging, Bluetooth, Caps Lock, privacy dots, timer, wheel-to-switch, seek) come from **[Dynamic Island for Windows](https://github.com/devcode90/Dynamic-Island-for-Windows)**, the MIT-licensed Windhawk mod by Himanshu (devcode90) and contributors. Kawaii Island re-implements them in C#/WPF; no code was copied.
 
 ## License
 

@@ -187,6 +187,12 @@ public sealed class WidgetsConfig
     /// <summary>City for the weather; empty = Windows location (when allowed).</summary>
     public string City { get; set; } = "";
     public bool Fahrenheit { get; set; } = !System.Globalization.RegionInfo.CurrentRegion.IsMetric;
+    // Live activities (brief alerts on the island)
+    public bool LiveVolume { get; set; } = true;
+    public bool LiveBattery { get; set; } = true;
+    public bool LiveBluetooth { get; set; } = true;
+    public bool LiveKeys { get; set; } = true;
+    public bool LivePrivacy { get; set; } = true;
 }
 
 /// <summary>Code mode: Claude Code session companion. Listener is 127.0.0.1-only; data is kept in memory only.</summary>

@@ -171,6 +171,16 @@ public partial class App : Application
                               Config.Current.Appearance.Mascot, v => { Config.Current.Appearance.Mascot = v; SettingsChanged(); }));
         menu.Items.Add(Choice("Collapse after", CollapseChoices, island.AutoCollapseSeconds.ToString(), v => island.SetAutoCollapse(int.Parse(v))));
         menu.Items.Add(Check("Coding mode", island.CodeMode, SetCodeMode));
+        var timer = new MenuItem { Header = "Timer" };
+        foreach (int minutes in new[] { 1, 5, 10, 25, 50 })
+            timer.Items.Add(Item($"{minutes} min", () => island.StartTimer(minutes)));
+        if (island.TimerActive)
+        {
+            timer.Items.Add(new Separator());
+            timer.Items.Add(Item(island.TimerRunning ? "Pause" : "Resume", island.ToggleTimer));
+            timer.Items.Add(Item("Cancel", island.CancelTimer));
+        }
+        menu.Items.Add(timer);
         menu.Items.Add(Check("Do not disturb", island.Dnd, on => { island.SetDnd(on); _settings?.Reload(); }));
         menu.Items.Add(new Separator());
         menu.Items.Add(Item("Settings…", ShowSettings));

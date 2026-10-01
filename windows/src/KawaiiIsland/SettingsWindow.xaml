@@ -185,6 +185,8 @@
                     <Border Style="{StaticResource Card}"><StackPanel x:Name="PillWidgetsPanel"/></Border>
                     <TextBlock Style="{StaticResource Section}" Text="Open island"/>
                     <Border Style="{StaticResource Card}"><StackPanel x:Name="HomeWidgetsPanel"/></Border>
+                    <TextBlock Style="{StaticResource Section}" Text="Live activities"/>
+                    <Border Style="{StaticResource Card}"><StackPanel x:Name="LivePanel"/></Border>
                     <TextBlock Style="{StaticResource Section}" Text="Weather"/>
                     <Border Style="{StaticResource Card}"><StackPanel x:Name="WeatherPanel"/></Border>
                 </StackPanel>

@@ -68,7 +68,7 @@ public partial class IslandWindow : Window
         Pill.MouseEnter += (_, _) => OnHover(true);
         Pill.MouseLeave += (_, _) => OnHover(false);
         Pill.MouseLeftButtonDown += OnPillPressed;
-        Pill.MouseLeftButtonUp += (_, _) => { if (Win.Locked) SetExpanded(!_expanded); };
+        Pill.MouseLeftButtonUp += (_, _) => { if (Win.Locked && !_picking) SetExpanded(!_expanded); }; // clicks in Add apps stay in the list
         Pill.SizeChanged += (_, _) => SizeOutline();
         Pill.MouseRightButtonUp += (_, e) =>
         {
@@ -94,6 +94,7 @@ public partial class IslandWindow : Window
         InitAlerts();
         InitMail();
         InitShortcuts();
+        InitPicker();
         InitWidgets();
         InitLive();
         InitCalendar();
@@ -165,7 +166,7 @@ public partial class IslandWindow : Window
     private void ApplyConfig()
     {
         Width = Win.ExpandedWidth + ShadowMargin;
-        Height = Win.ExpandedHeight + ShadowMargin;
+        Height = Math.Max(Win.ExpandedHeight, PickerMaxHeight) + ShadowMargin; // room for Add apps; transparent area is click-through
         var (w, h) = RestSize;
         Pill.Width = w;
         Pill.Height = h;
@@ -305,7 +306,7 @@ public partial class IslandWindow : Window
     /// <summary>Unlocked: press-and-drag moves the island (DragMove); a press without movement is still a click.</summary>
     private void OnPillPressed(object sender, MouseButtonEventArgs e)
     {
-        if (Win.Locked || e.OriginalSource is MascotControl) return;
+        if (Win.Locked || _picking || e.OriginalSource is MascotControl) return;
         e.Handled = true;
         var before = Monitors.WindowRect(_hwnd);
         if (_expanded) SetExpanded(false);
@@ -397,6 +398,7 @@ public partial class IslandWindow : Window
         if (expand && _hidden) SlidePill(hide: false); // auto-hidden: opening reveals it (peek click, Code mode)
         if (_expanded == expand) return;
         _expanded = expand;
+        if (!expand && _picking) { _picking = false; PickerList.ItemsSource = null; RenderExpanded(); }
 
         if (expand) AnimatePill(Win.ExpandedWidth, ExpandedHeightNow(), Win.CornerRadius);
         else { var (w, h) = CollapsedSize(); AnimatePill(w, h, h / 2); }
@@ -466,7 +468,7 @@ public partial class IslandWindow : Window
     private double ExpandedHeightNow()
     {
         ExpandedItems.Measure(new Size(Win.ExpandedWidth, double.PositiveInfinity));
-        return Math.Clamp(Math.Ceiling(ExpandedItems.DesiredSize.Height), 84, Win.ExpandedHeight);
+        return Math.Clamp(Math.Ceiling(ExpandedItems.DesiredSize.Height), 84, _picking ? PickerMaxHeight : Win.ExpandedHeight);
     }
 
     /// <summary>Content changed while open (new mail, tab switch…): grow or shrink to fit.</summary>
@@ -500,25 +502,17 @@ public partial class IslandWindow : Window
         _autoCollapse.Stop();
         int seconds = _config.Current.Behavior.AutoCollapseSeconds;
         if (seconds == 0) seconds = 4; // the island always closes by itself unless music is playing
-        if (!_expanded || Pill.IsMouseOver || _approval is not null || _media is { Playing: true }) return;
+        if (!_expanded || _picking || Pill.IsMouseOver || _approval is not null || _media is { Playing: true }) return;
         _autoCollapse.Interval = TimeSpan.FromSeconds(seconds);
         _autoCollapse.Start();
     }
 
-    /// <summary>Children fade + slide up 6 px, one after another (60 ms stagger).</summary>
+    /// <summary>Content fades in where it will stay (no slide): the growing island reveals it, as on iPhone.</summary>
     private static void StaggerIn(Panel panel)
     {
         int i = 0;
         foreach (UIElement child in panel.Children)
-        {
-            var slide = new TranslateTransform(0, 6);
-            child.RenderTransform = slide;
-            child.Opacity = 0;
-            var begin = Motion.Delay(80 + i++ * 60);
-            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-            child.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, Motion.Ms(180)) { BeginTime = begin, EasingFunction = ease });
-            slide.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(6, 0, Motion.Ms(180)) { BeginTime = begin, EasingFunction = ease });
-        }
+            child.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, Motion.Ms(220)) { BeginTime = Motion.Delay(60 + i++ * 30), EasingFunction = Motion.Smooth });
     }
 
     private static void Fade(UIElement el, double to, int ms, Action? done = null, int delayMs = 0)

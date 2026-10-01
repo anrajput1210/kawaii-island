@@ -79,7 +79,7 @@ public partial class IslandWindow
     private void TryHide()
     {
         _hideSoon.Stop();
-        if (!_autoHiding || _hidden || Pill.IsMouseOver || _menu?.IsOpen == true) return;
+        if (!_autoHiding || _hidden || _picking || Pill.IsMouseOver || _menu?.IsOpen == true) return;
         SlidePill(hide: true);
         SetExpanded(false);
     }
@@ -91,12 +91,15 @@ public partial class IslandWindow
         _hideSoon.Stop();
         bool across = HideEdge is Edge.Top or Edge.Bottom;
         var (x, y) = hide ? Toward(HideEdge, (across ? Pill.ActualHeight : Pill.ActualWidth) + Gap + 4) : (0, 0);
-        var d = Motion.Ms(250);
-        var ease = new CubicEase { EasingMode = hide ? EasingMode.EaseIn : EasingMode.EaseOut };
+        // Showing: the solid island glides out of the screen edge in step with its 400 ms grow (no see-through fade,
+        // so nothing appears before the island does). Hiding: quick ease-in back past the edge.
+        var d = Motion.Ms(hide ? 250 : 400);
+        IEasingFunction ease = hide ? new CubicEase { EasingMode = EasingMode.EaseIn } : Motion.Smooth;
         HideShift.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(x, d) { EasingFunction = ease });
         HideShift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(y, d) { EasingFunction = ease });
-        Pill.BeginAnimation(OpacityProperty, new DoubleAnimation(hide ? 0 : 1, d));
-        Outline.BeginAnimation(OpacityProperty, new DoubleAnimation(hide ? 0 : 1, d));
+        Pill.BeginAnimation(OpacityProperty, hide ? new DoubleAnimation(0, d) : null);
+        Outline.BeginAnimation(OpacityProperty, hide ? new DoubleAnimation(0, d) : null);
+        if (!hide) Pill.Opacity = Outline.Opacity = 1;
         Pill.IsHitTestVisible = !hide;
         EdgeStrip.Visibility = Peek.Visibility = hide ? Visibility.Visible : Visibility.Collapsed;
         ShowPeek(false);

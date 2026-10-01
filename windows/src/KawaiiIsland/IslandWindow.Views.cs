@@ -136,6 +136,8 @@ public partial class IslandWindow
         CodeMeters.Visibility = Vis(_view == View.Code && _tracker.Active?.Agent is null or "Claude Code"); // usage meters are Claude-only
         MusicPanel.Visibility = Vis(_view == View.Music);
         AlertsPanel.Visibility = Vis(_view == View.Alerts);
+        PickerPanel.Visibility = Visibility.Collapsed;
+        if (_picking) foreach (UIElement child in ExpandedItems.Children) child.Visibility = Vis(child == PickerPanel); // Add apps replaces the view
         FitExpanded();
     }
 

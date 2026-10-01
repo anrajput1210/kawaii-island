@@ -344,6 +344,73 @@
                     <!-- App shortcuts (spec §3.4): pinned apps, + to add; drop files on the island to pin, drag a tile to reorder -->
                     <WrapPanel x:Name="AppsPanel" Margin="-2,10,0,0" Visibility="Collapsed"/>
 
+                    <!-- Add apps: the island itself grows into the installed-apps list (no separate window) -->
+                    <DockPanel x:Name="PickerPanel" Visibility="Collapsed">
+                        <TextBlock DockPanel.Dock="Top" Text="Add apps" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
+                                   FontSize="15" FontWeight="SemiBold"/>
+                        <Grid DockPanel.Dock="Top" Margin="0,8,0,6">
+                            <TextBlock Text="&#xE721;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" Foreground="{DynamicResource IslandMuted}"
+                                       VerticalAlignment="Center" IsHitTestVisible="False"/>
+                            <TextBlock x:Name="PickerHint" Text="Search" Margin="22,0,0,0" Foreground="{DynamicResource IslandMuted}" FontFamily="{DynamicResource IslandFont}"
+                                       FontSize="13" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                            <!-- Hairline under the search; a separate Border because TextBox turns its own border Windows-blue on focus -->
+                            <Border Height="1" VerticalAlignment="Bottom" Background="#26FFFFFF" IsHitTestVisible="False"/>
+                            <TextBox x:Name="PickerSearch" Padding="18,5,0,5" Background="Transparent" BorderThickness="0"
+                                     Foreground="{DynamicResource IslandText}" CaretBrush="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}" FontSize="13"
+                                     AutomationProperties.Name="Search apps"/>
+                        </Grid>
+                        <DockPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
+                            <Button x:Name="PickerAdd" DockPanel.Dock="Right" Style="{StaticResource TextButton}" Content="Add" FontSize="13" IsEnabled="False"/>
+                            <Button x:Name="PickerCancel" DockPanel.Dock="Right" Style="{StaticResource TextButton}" Content="Cancel" FontSize="13"/>
+                            <Button x:Name="PickerBrowse" Style="{StaticResource TextButton}" Content="Browse for a file…" FontSize="13" HorizontalAlignment="Left"
+                                    ToolTip="Pin any program, document or folder that isn't in the list"/>
+                        </DockPanel>
+                        <Grid Height="250">
+                            <TextBlock x:Name="PickerLoading" Text="Loading your apps…" Foreground="{DynamicResource IslandMuted}" FontFamily="{DynamicResource IslandFont}"
+                                       FontSize="12.5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <!-- Scrollbar hidden like macOS; the wheel and arrow keys still scroll -->
+                            <ListBox x:Name="PickerList" SelectionMode="Extended" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource IslandText}"
+                                     ScrollViewer.VerticalScrollBarVisibility="Hidden" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                     FontFamily="{DynamicResource IslandFont}" FontSize="13" AutomationProperties.Name="Installed apps">
+                                <ListBox.ItemContainerStyle>
+                                    <!-- Row: hover/selected = faint white wash, selected also bold (no pill) -->
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border x:Name="Bg" Background="Transparent" CornerRadius="8" Padding="8,5">
+                                                        <ContentPresenter/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="Bg" Property="Background" Value="#14FFFFFF"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter TargetName="Bg" Property="Background" Value="#24FFFFFF"/>
+                                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel>
+                                            <Image Source="{Binding Icon}" Width="22" Height="22" Margin="0,0,10,0"/>
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding Note}" Foreground="{DynamicResource IslandMuted}" FontSize="11" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </DockPanel>
+
                     <!-- Mail (spec §3.1): unread count + latest 5 headers; clicking opens mail -->
                     <StackPanel x:Name="MailPanel" Visibility="Collapsed">
                         <DockPanel>

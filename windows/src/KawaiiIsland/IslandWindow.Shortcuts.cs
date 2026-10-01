@@ -98,19 +98,6 @@ public partial class IslandWindow
         return tile;
     }
 
-    /// <summary>Installed-apps list (Start menu + Store apps); "Browse for a file…" covers anything else.</summary>
-    public void ShowAppPicker()
-    {
-        var anchor = new Rect(Pill.PointToScreen(new Point()), Pill.PointToScreen(new Point(Pill.ActualWidth, Pill.ActualHeight)));
-        anchor.Transform(PresentationSource.FromVisual(Pill)!.CompositionTarget.TransformFromDevice); // device px → DIPs
-        SetExpanded(false);
-        var picker = new AppPickerWindow(_config.Directory, Apps.Items.Select(i => i.Path), anchor);
-        if (picker.ShowDialog() != true) return;
-        int added = picker.ChosenApps.Count(a => ShortcutLauncher.PinApp(Apps.Items, a, Apps.Max) == PinResult.Added);
-        if (added > 0) { Apps.Enabled = true; SaveApps(); }
-        if (picker.ChosenFiles.Length > 0) PinAll(picker.ChosenFiles);
-    }
-
     private static StackPanel TileContent(FrameworkElement icon, string label)
     {
         icon.HorizontalAlignment = HorizontalAlignment.Center;

@@ -301,7 +301,7 @@ public partial class SettingsWindow : Window
         Switch(HomeWidgetsPanel, "Pinned apps", "Your apps under the clock. Right-click one on the island to rename or remove it.",
                C.Modules.Shortcuts.Enabled, Island.SetShortcutsEnabled);
         var choose = new Button { Content = "Choose apps…", Padding = new Thickness(14, 5, 14, 5) };
-        choose.Click += (_, _) => Island.ShowAppPicker();
+        choose.Click += (_, _) => { Close(); Island.ShowAppPicker(); }; // the list opens inside the island, which Settings hides
         Field(HomeWidgetsPanel, "Apps on the island", choose);
         Field(HomeWidgetsPanel, "Max pinned apps", Segments([("4", "4"), ("6", "6"), ("8", "8"), ("12", "12")], C.Modules.Shortcuts.Max.ToString(),
                v => { C.Modules.Shortcuts.Max = int.Parse(v); _app.Config.SaveSoon(); Island.SetShortcutsEnabled(C.Modules.Shortcuts.Enabled); }));

@@ -164,7 +164,6 @@
                     <RadioButton Style="{StaticResource NavItem}" Content="Position" Tag="&#xE7F4;" x:Name="NavPosition"/>
                     <RadioButton Style="{StaticResource NavItem}" Content="Appearance" Tag="&#xE790;" x:Name="NavAppearance"/>
                     <RadioButton Style="{StaticResource NavItem}" Content="Notifications" Tag="&#xEA8F;" x:Name="NavNotifications"/>
-                    <RadioButton Style="{StaticResource NavItem}" Content="Mail" Tag="&#xE715;" x:Name="NavMail"/>
                     <RadioButton Style="{StaticResource NavItem}" Content="AI agents" Tag="&#xE943;" x:Name="NavAgents"/>
                     <RadioButton Style="{StaticResource NavItem}" Content="About" Tag="&#xE946;" x:Name="NavAbout"/>
                 </StackPanel>
@@ -200,9 +199,6 @@
                 </StackPanel>
                 <StackPanel x:Name="PageNotifications">
                     <Border Style="{StaticResource Card}" Margin="0,14,0,0"><StackPanel x:Name="NotifyPanel"/></Border>
-                </StackPanel>
-                <StackPanel x:Name="PageMail">
-                    <Border Style="{StaticResource Card}" Margin="0,14,0,0"><StackPanel x:Name="MailSettingsPanel"/></Border>
                 </StackPanel>
                 <StackPanel x:Name="PageAgents">
                     <Border Style="{StaticResource Card}" Margin="0,14,0,0"><StackPanel x:Name="CodePanel"/></Border>

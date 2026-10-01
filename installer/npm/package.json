@@ -1,7 +1,7 @@
 {
   "name": "kawaii-island",
   "version": "0.1.0",
-  "description": "A cute Dynamic Island for Windows 11: music, notifications, mail, app shortcuts and your AI coding agents, with a mascot.",
+  "description": "A cute Dynamic Island for Windows 11: music, notifications, app shortcuts and your AI coding agents, with a mascot.",
   "license": "MIT",
   "homepage": "https://github.com/anrajput1210/kawaii-island",
   "repository": { "type": "git", "url": "git+https://github.com/anrajput1210/kawaii-island.git" },

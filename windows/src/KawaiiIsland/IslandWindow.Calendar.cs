@@ -1,4 +1,3 @@
-using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -6,24 +5,19 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using KawaiiIsland.Services;
-using KawaiiIsland.Services.Mail;
-using Microsoft.Extensions.Logging;
 
 namespace KawaiiIsland;
 
 /// <summary>
-/// Calendar tab: today's date with month progress, events from the calendar of the account signed in for mail
-/// (Google Calendar or Outlook), and the user's own tasks, merged in time order. Upcoming events get a heads-up
-/// 10 minutes before. System tab: CPU / memory / disk / network and Lock · Sleep · Restart · Shut down.
+/// Calendar tab: today's date with month progress and the user's own tasks in time order. Timed tasks get a
+/// heads-up 10 minutes before. System tab: CPU / memory / disk / network and Lock · Sleep · Restart · Shut down.
 /// (Tasks, month progress, system monitor and power hub are features from the Python "dynamic-island-for-windows".)
 /// </summary>
 public partial class IslandWindow
 {
-    private readonly DispatcherTimer _calendarTimer = new() { Interval = TimeSpan.FromMinutes(10) };
     private readonly DispatcherTimer _systemTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly SystemStats _stats = new();
     private readonly HashSet<string> _remindedEvents = [];
-    private List<CalendarItem> _events = [];
     private (TextBlock Value, Border Fill)[] _systemMeters = [];
 
     private bool CalendarOn => Widgets.Calendar;
@@ -34,8 +28,6 @@ public partial class IslandWindow
         TabCalendar.Click += (_, _) => Pick(View.Calendar);
         TabSystem.Click += (_, _) => Pick(View.System);
         AddTaskButton.Click += (_, _) => AddTask();
-        _calendarTimer.Tick += async (_, _) => await RefreshCalendarAsync();
-        _calendarTimer.Start();
         _systemTimer.Tick += (_, _) => { if (_expanded && _view == View.System) RenderSystem(); };
         _systemTimer.Start();
         _systemMeters = [SystemMeter("CPU"), SystemMeter("Memory"), SystemMeter("Disk"), SystemMeter("Network")];
@@ -43,7 +35,7 @@ public partial class IslandWindow
         SleepButton.Click += (_, _) => SystemStats.Sleep();
         RestartButton.Click += (_, _) => Confirm("Restart your PC now?", SystemStats.Restart);
         ShutDownButton.Click += (_, _) => Confirm("Shut down your PC now?", SystemStats.ShutDown);
-        _ = RefreshCalendarAsync();
+        RenderCalendar();
     }
 
     private static void Confirm(string question, Action action)
@@ -55,33 +47,11 @@ public partial class IslandWindow
 
     // ---------------- calendar ----------------
 
-    /// <summary>Events from Google Calendar or Outlook, whichever account is signed in for mail.</summary>
-    public async Task RefreshCalendarAsync()
-    {
-        if (CalendarOn && OAuthProvider.For(MailCfg.Provider) is { } provider && OAuth.Load(_config.Directory) is { } account && account.Provider == provider.Key)
-        {
-            try
-            {
-                var (id, secret) = ClientFor(provider);
-                string token = await OAuth.AccessTokenAsync(provider, account, id, secret, _config.Directory, CancellationToken.None, provider.CalendarScope);
-                _events = await CalendarService.FetchAsync(provider, token, DateTimeOffset.Now);
-            }
-            catch (Exception ex) when (ex is HttpRequestException or OAuthException or TaskCanceledException or System.Text.Json.JsonException)
-            {
-                App.Log.LogInformation("Calendar unavailable: {Message}", ex.Message); // keep the last list
-            }
-        }
-        else _events = [];
-        RenderCalendar();
-    }
-
     private IEnumerable<CalendarItem> Agenda(DateTimeOffset now)
     {
         var tasks = Widgets.Tasks.Select((t, i) => new CalendarItem(t.Name, CalendarService.TaskTime(t.Time, now.Date), false,
                                                                     t.Done ? "#555559" : "#30D158", true, "task:" + i));
-        return _events.Where(e => e.Start is null || e.AllDay || e.Start > now.AddMinutes(-30))
-                      .Concat(tasks)
-                      .OrderBy(e => e.Start ?? DateTimeOffset.MaxValue)
+        return tasks.OrderBy(e => e.Start ?? DateTimeOffset.MaxValue)
                       .Take(5);
     }
 
@@ -98,17 +68,14 @@ public partial class IslandWindow
             AgendaList.Children.Add(AgendaRow(item, now));
         if (AgendaList.Children.Count == 0)
         {
-            string hint = OAuth.Load(_config.Directory) is null
-                ? "Nothing planned. Sign in with Google or Outlook in Settings → Mail to see your calendar."
-                : "Nothing else today.";
-            var empty = Text(hint, 12, "IslandMuted");
+            var empty = Text("Nothing planned. Add a task below.", 12, "IslandMuted");
             empty.TextWrapping = TextWrapping.Wrap;
             AgendaList.Children.Add(empty);
         }
         RenderExpanded();
     }
 
-    /// <summary>"● 3:00 PM  Standup" — coloured dot (blue events, green tasks), time, title. Click a task to tick it off.</summary>
+    /// <summary>"● 3:00 PM  Standup" — green dot (grey when done), time, title. Click a task to tick it off.</summary>
     private FrameworkElement AgendaRow(CalendarItem item, DateTimeOffset now)
     {
         var row = new DockPanel { Margin = new Thickness(0, 2, 0, 3), Background = Brushes.Transparent };
@@ -149,7 +116,7 @@ public partial class IslandWindow
         RenderCalendar();
     }
 
-    /// <summary>Called by the live tick: a heads-up 10 minutes before an event or timed task (once each).</summary>
+    /// <summary>Called by the live tick: a heads-up 10 minutes before a timed task (once each).</summary>
     private void CheckUpcoming(DateTimeOffset now)
     {
         if (!CalendarOn) return;

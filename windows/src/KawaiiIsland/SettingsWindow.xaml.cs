@@ -9,7 +9,6 @@ using System.Windows.Shapes;
 using KawaiiIsland.Controls;
 using KawaiiIsland.Services;
 using KawaiiIsland.Services.ClaudeCode;
-using KawaiiIsland.Services.Mail;
 
 namespace KawaiiIsland;
 
@@ -34,7 +33,6 @@ public partial class SettingsWindow : Window
         (NavPosition, PagePosition, "Where the island lives and how it gets out of the way."),
         (NavAppearance, PageAppearance, "Theme, accent colour, mascot and the island's size."),
         (NavNotifications, PageNotifications, "Windows notifications mirrored on the island. Kept in memory on this PC only."),
-        (NavMail, PageMail, "Unread count and your latest messages. Headers only, never bodies."),
         (NavAgents, PageAgents, "Follow Claude Code, Codex, Gemini CLI, Cursor or any agent that can call a hook."),
         (NavAbout, PageAbout, "Version, where your data lives, and logs."),
     ];
@@ -142,7 +140,6 @@ public partial class SettingsWindow : Window
                notify.ShowPreview, on => { notify.ShowPreview = on; _app.Config.SaveSoon(); });
         Field(NotifyPanel, "Muted apps", MutedApps(), below: true);
 
-        BuildMail();
 
         CodePanel.Children.Clear();
         var code = C.Modules.Code;
@@ -165,116 +162,6 @@ public partial class SettingsWindow : Window
         Footer.Text = $"Saved on this PC in {_app.Config.Directory}";
     }
 
-    /// <summary>Mail (spec §3.1). Field edits apply on "Save & connect"; the password goes to DPAPI, never config.json.</summary>
-    private void BuildMail()
-    {
-        var mail = C.Modules.Mail;
-        MailSettingsPanel.Children.Clear();
-        Switch(MailSettingsPanel, "Show mail", Island.MailProblem ?? "Unread count on the island and your latest 5 messages (headers only, never bodies).",
-               mail.Enabled, async on => { mail.Enabled = on; _app.Config.SaveSoon(); await Island.RestartMailAsync(); Later(Reload); });
-        Field(MailSettingsPanel, "Account", Segments([("Demo", "mock"), ("Gmail", "google"), ("Outlook", "microsoft"), ("Other (IMAP)", "imap")], mail.Provider,
-               async v => { mail.Provider = v; _app.Config.SaveSoon(); await Island.RestartMailAsync(); Later(Reload); }));
-        if (OAuthProvider.For(mail.Provider) is { } oauth) { BuildSignIn(oauth); return; }
-        if (mail.Provider != "imap") return;
-
-        var server = TextRow("Server", mail.Server, "imap.gmail.com");
-        var port = TextRow("Port", mail.Port.ToString(), "993");
-        var user = TextRow("Username", mail.Username, "you@example.com");
-        var password = new PasswordBox { Padding = new Thickness(6, 4, 6, 4) };
-        StyleBox(password);
-        AutomationProperties.SetName(password, "Password");
-        Field(MailSettingsPanel, MailSecret.Exists(_app.Config.Directory) ? "Password (saved, type to replace)" : "App password", password);
-        var url = TextRow("Open mail at (optional)", mail.OpenUrl, "https://… (blank = guess from server)");
-        Switch(MailSettingsPanel, "SSL/TLS", "Port 993 uses SSL. Off = STARTTLS when the server offers it.", mail.Ssl, on => mail.Ssl = on);
-
-        var save = new Button { Content = "Save & connect", Padding = new Thickness(14, 5, 14, 5), Margin = new Thickness(0, 8, 0, 4), HorizontalAlignment = HorizontalAlignment.Left };
-        save.Click += async (_, _) =>
-        {
-            mail.Server = server.Text.Trim();
-            mail.Port = int.TryParse(port.Text, out var p) ? Math.Clamp(p, 1, 65535) : 993;
-            mail.Username = user.Text.Trim();
-            string link = url.Text.Trim();
-            mail.OpenUrl = link.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ? link : "";
-            if (password.Password.Length > 0) MailSecret.Save(_app.Config.Directory, password.Password);
-            _app.Config.SaveSoon();
-            save.IsEnabled = false;
-            save.Content = "Connecting…";
-            await Island.RestartMailAsync();
-            Later(Reload);
-        };
-        MailSettingsPanel.Children.Add(save);
-        var note = Label("Gmail/Outlook: use an app password (OAuth isn't supported yet). Everything stays on this PC.", 11.5, "IslandMuted");
-        note.TextWrapping = TextWrapping.Wrap;
-        MailSettingsPanel.Children.Add(note);
-
-        TextBox TextRow(string label, string value, string hint)
-        {
-            var box = new TextBox { Text = value, Padding = new Thickness(6, 4, 6, 4), ToolTip = hint };
-            StyleBox(box);
-            AutomationProperties.SetName(box, label);
-            Field(MailSettingsPanel, label, box);
-            return box;
-        }
-    }
-
-    /// <summary>Read-only, selectable code block for copy-paste setup snippets.</summary>
-    private static TextBox Snippet(string text)
-    {
-        var box = new TextBox
-        {
-            Text = text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, Padding = new Thickness(10, 8, 10, 8),
-            FontFamily = new FontFamily("Cascadia Mono, Consolas"), FontSize = 12, BorderThickness = new Thickness(1),
-        };
-        StyleBox(box);
-        return box;
-    }
-
-    /// <summary>Sign in with Google / Microsoft: one button, the browser does the rest. Nothing to register or paste.</summary>
-    private void BuildSignIn(OAuthProvider oauth)
-    {
-        var mail = C.Modules.Mail;
-        string dir = _app.Config.Directory;
-        var account = OAuth.Load(dir) is { } a && a.Provider == oauth.Key ? a : null;
-
-        var button = new Button { Padding = new Thickness(16, 6, 16, 6) };
-        if (account is null && Island.ClientFor(oauth).Id.Length == 0)
-        {
-            var na = Label($"Sign in with {oauth.Name} isn't available in this build. Use Other (IMAP) with an app password for now.", 12.5, "IslandMuted");
-            na.TextWrapping = TextWrapping.Wrap;
-            Row(MailSettingsPanel, na);
-            return;
-        }
-        if (account is null)
-        {
-            button.Content = $"Sign in with {oauth.Name}";
-            button.Click += async (_, _) =>
-            {
-                button.IsEnabled = false;
-                button.Content = "Finish signing in in your browser…";
-                try
-                {
-                    var (id, secret) = Island.ClientFor(oauth);
-                    OAuth.Save(dir, await OAuth.SignInAsync(oauth, id, secret, CancellationToken.None));
-                    await Island.RestartMailAsync();
-                    await Island.RefreshCalendarAsync(); // same account: Google Calendar / Outlook calendar
-                }
-                catch (Exception ex) when (ex is OAuthException or System.Net.Http.HttpRequestException or System.ComponentModel.Win32Exception)
-                {
-                    MessageBox.Show(this, ex.Message, $"Sign in with {oauth.Name}", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-                Later(Reload);
-            };
-            Field(MailSettingsPanel, "Account", button);
-        }
-        else
-        {
-            button.Content = "Sign out";
-            button.Click += async (_, _) => { OAuth.Delete(dir); await Island.RestartMailAsync(); await Island.RefreshCalendarAsync(); Later(Reload); };
-            Field(MailSettingsPanel, $"Signed in as {(account.Email.Length > 0 ? account.Email : oauth.Name)}", button);
-        }
-
-    }
-
     /// <summary>Settings → Widgets: what the resting pill and the open island show.</summary>
     private void BuildWidgets()
     {
@@ -293,7 +180,7 @@ public partial class SettingsWindow : Window
         Switch(HomeWidgetsPanel, "Laptop battery", "Charge and whether it's plugged in.", wg.HomeBattery, on => Home(() => wg.HomeBattery = on));
         Switch(HomeWidgetsPanel, "Bluetooth devices", "Battery of connected headphones, mice and controllers that report it (as in Windows Settings).",
                wg.HomeBluetooth, on => Home(() => wg.HomeBluetooth = on));
-        Switch(HomeWidgetsPanel, "Calendar", "Upcoming events from the Google or Outlook account you signed in with (Settings → Mail), plus your own tasks.",
+        Switch(HomeWidgetsPanel, "Calendar", "Your own tasks for today, with a heads-up 10 minutes before timed ones.",
                wg.Calendar, on => Home(() => wg.Calendar = on));
         Switch(HomeWidgetsPanel, "System", "CPU, memory, disk and network, with Lock, Sleep, Restart and Shut down.",
                wg.ShowSystem, on => Home(() => wg.ShowSystem = on));
@@ -326,6 +213,18 @@ public partial class SettingsWindow : Window
         var note = Label("From Open-Meteo (free, no account). Only the city, or your location rounded to about 10 km, leaves this PC.", 11.5, "IslandMuted");
         note.TextWrapping = TextWrapping.Wrap;
         Row(WeatherPanel, note);
+    }
+
+    /// <summary>Read-only, selectable code block for copy-paste setup snippets.</summary>
+    private static TextBox Snippet(string text)
+    {
+        var box = new TextBox
+        {
+            Text = text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, Padding = new Thickness(10, 8, 10, 8),
+            FontFamily = new FontFamily("Cascadia Mono, Consolas"), FontSize = 12, BorderThickness = new Thickness(1),
+        };
+        StyleBox(box);
+        return box;
     }
 
     private static void StyleBox(Control box)

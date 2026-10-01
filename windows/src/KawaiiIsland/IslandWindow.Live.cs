@@ -273,7 +273,7 @@ public partial class IslandWindow
     private void OnPillWheel(object sender, MouseWheelEventArgs e)
     {
         if (!_expanded) return;
-        var tabs = new[] { (TabMusic, View.Music), (TabCode, View.Code), (TabAlerts, View.Alerts), (TabMail, View.Mail), (TabApps, View.Apps),
+        var tabs = new[] { (TabMusic, View.Music), (TabCode, View.Code), (TabAlerts, View.Alerts), (TabApps, View.Apps),
                            (TabTimer, View.Timer), (TabCalendar, View.Calendar), (TabSystem, View.System) } // same order as on screen
             .Where(t => t.Item1.Visibility == Visibility.Visible).ToList();
         if (tabs.Count < 2) return;

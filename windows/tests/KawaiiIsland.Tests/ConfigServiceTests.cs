@@ -16,7 +16,6 @@ public sealed class ConfigServiceTests : IDisposable
         using var svc = new ConfigService(_dir);
         Assert.Equal(180, svc.Current.Window.CollapsedWidth);
         Assert.Equal("kiko", svc.Current.Appearance.Mascot);
-        Assert.Equal("mock", svc.Current.Modules.Mail.Provider);
     }
 
     [Fact]

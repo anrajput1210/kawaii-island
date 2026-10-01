@@ -92,7 +92,6 @@ public partial class IslandWindow : Window
         InitMusic();
         InitViews();
         InitAlerts();
-        InitMail();
         InitShortcuts();
         InitPicker();
         InitWidgets();
@@ -158,7 +157,6 @@ public partial class IslandWindow : Window
         StopCodeMode();
         _mediaService?.Dispose();
         StopNotifications();
-        _mail?.Dispose();
         StopLive();
         base.OnClosed(e);
     }
@@ -285,7 +283,8 @@ public partial class IslandWindow : Window
             Monitors.MoveWindow(_hwnd, mon.Work.X + (mon.Work.Width - window.Width) / 2, mon.Work.Y);
             return;
         }
-        var saved = new Rect(mon.Work.X + Win.X * mon.Scale, mon.Work.Y + Win.Y * mon.Scale,
+        // Notch: always flush with the top edge, whatever height it was saved at.
+        var saved = new Rect(mon.Work.X + Win.X * mon.Scale, mon.Work.Y + (Notch ? 0 : Win.Y * mon.Scale),
                              RestSize.W * mon.Scale, RestSize.H * mon.Scale);
         var pos = WindowFor(Placement.ClampInto(saved, mon.Work), window.Size, mon.Scale);
         Monitors.MoveWindow(_hwnd, pos.X, pos.Y);
@@ -322,6 +321,7 @@ public partial class IslandWindow : Window
         var pill = PillRect(window, s);
         var mon = Monitors.For(pill);
         var target = Placement.Snap(pill, mon.Work, SnapThreshold * mon.Scale, Gap * mon.Scale);
+        if (Notch) target.Y = mon.Work.Y; // the notch stays on the top edge; dragging moves it sideways
         AnimateWindow(window.TopLeft, WindowFor(target, window.Size, s));
         SavePosition(mon, target);
     }

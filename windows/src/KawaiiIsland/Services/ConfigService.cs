@@ -104,7 +104,7 @@ public sealed class AppConfig
     public void Validate()
     {
         Window ??= new(); Appearance ??= new(); Modules ??= new(); Behavior ??= new();
-        Modules.Mail ??= new(); Modules.Notifications ??= new(); Modules.Music ??= new(); Modules.Shortcuts ??= new();
+        Modules.Notifications ??= new(); Modules.Music ??= new(); Modules.Shortcuts ??= new();
         Modules.Code ??= new();
         Modules.Widgets ??= new();
         Modules.Widgets.City ??= "";
@@ -128,11 +128,6 @@ public sealed class AppConfig
         Appearance.Mascot = OneOf(Appearance.Mascot, DefaultMascot, [.. Mascots, NoMascot]);
         // The open island always closes on its own unless music is playing (0 used to mean "never").
         Behavior.AutoCollapseSeconds = Behavior.AutoCollapseSeconds == 0 ? 4 : Math.Clamp(Behavior.AutoCollapseSeconds, 2, 600);
-        Modules.Mail.PollSeconds = Math.Clamp(Modules.Mail.PollSeconds, 15, 3600);
-        Modules.Mail.Provider = OneOf(Modules.Mail.Provider, "mock", "mock", "imap", "google", "microsoft");
-        Modules.Mail.GoogleClientId ??= ""; Modules.Mail.GoogleClientSecret ??= ""; Modules.Mail.MicrosoftClientId ??= "";
-        Modules.Mail.Port = Math.Clamp(Modules.Mail.Port, 1, 65535);
-        Modules.Mail.Server ??= ""; Modules.Mail.Username ??= ""; Modules.Mail.OpenUrl ??= "";
         Modules.Shortcuts.Max = Math.Clamp(Modules.Shortcuts.Max, 1, 24);
     }
 
@@ -176,7 +171,6 @@ public sealed class TaskItem
 
 public sealed class ModulesConfig
 {
-    public MailConfig Mail { get; set; } = new();
     public NotificationsConfig Notifications { get; set; } = new();
     public MusicConfig Music { get; set; } = new();
     public ShortcutsConfig Shortcuts { get; set; } = new();
@@ -221,24 +215,6 @@ public sealed class CodeConfig
     public bool Consented { get; set; }
     /// <summary>Answer Claude Code permission prompts (Allow / Deny) from the island.</summary>
     public bool Approvals { get; set; } = true;
-}
-
-/// <summary>No password here — credentials are DPAPI-encrypted in a separate local file (Phase 9).</summary>
-public sealed class MailConfig
-{
-    public bool Enabled { get; set; } = true;
-    public string Provider { get; set; } = "mock";
-    public string Server { get; set; } = "";
-    public int Port { get; set; } = 993;
-    public bool Ssl { get; set; } = true;
-    public string Username { get; set; } = "";
-    public int PollSeconds { get; set; } = 60;
-    /// <summary>Developer overrides for the built-in OAuth clients (config.json only, no UI; see README → For maintainers).</summary>
-    public string GoogleClientId { get; set; } = "";
-    public string GoogleClientSecret { get; set; } = "";
-    public string MicrosoftClientId { get; set; } = "";
-    /// <summary>Where clicking mail goes; empty = webmail guessed from the server, else the default mail app.</summary>
-    public string OpenUrl { get; set; } = "";
 }
 
 public sealed class NotificationsConfig

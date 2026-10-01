@@ -1,28 +1,27 @@
 # Kawaii Island
 
-A cute, customizable **Dynamic Island for Windows 11** (macOS version in progress). A small pill docks at the top of your screen and expands with springy micro-animations to show music, mail, notifications and app shortcuts. A mascot reacts to what you do.
+A cute, customizable **Dynamic Island for Windows 11** (macOS version in progress). A small pill docks at the top of your screen and expands with springy micro-animations to show music, notifications from any app and app shortcuts. A mascot reacts to what you do.
 
 <p align="center"><img src="design/mascot/icon.png" width="96" alt="Kiko, the default mascot"></p>
 
 <p align="center">
-  <img src="docs/screenshots/collapsed.png" alt="Collapsed island: mascot, unread mail badge and clock"><br><br>
-  <img src="docs/screenshots/home-apps.png" width="520" alt="Expanded island: clock, date and pinned apps"><br><br>
-  <img src="docs/screenshots/mail.png" width="520" alt="Expanded island: Mail tab with unread senders">
+  <img src="docs/screenshots/collapsed.png" alt="Collapsed island: mascot and clock"><br><br>
+  <img src="docs/screenshots/home-apps.png" width="520" alt="Expanded island: clock, date and pinned apps">
 </p>
 
 **It never covers your browser tabs.** The island reserves its own strip of screen as a Desktop AppBar, so maximized windows stop below it instead of sliding underneath.
 
-> **Status: v0.1 feature-complete on Windows.** All 11 build phases (skeleton → polish), Code mode with on-island approvals, mail and app shortcuts are done; the macOS app and installers are next. See [Roadmap](#roadmap). Try the design in your browser: open [`design/mockup/index.html`](design/mockup/index.html).
+> **Status: v0.1 feature-complete on Windows.** All 11 build phases (skeleton → polish), Code mode with on-island approvals, notifications and app shortcuts are done; the macOS app and installers are next. See [Roadmap](#roadmap). Try the design in your browser: open [`design/mockup/index.html`](design/mockup/index.html).
 
 ## Features
 
 - **AppBar workspace reservation** (top/bottom/left/right): windows stop below the island. The reservation is released cleanly on exit or crash.
 - **Music from any player** via Windows media controls (SMTC): Spotify, Apple Music, browser tabs, VLC… with no login. The accent color comes from the album art.
-- **Notifications mirroring** (toasts), **mail** headers over IMAP (unread count and latest 5; bodies are never downloaded), **app shortcuts** (drop a file on the island to pin it).
+- **Notifications from any app** (Outlook, Gmail in your browser, WhatsApp, Teams… whatever shows a Windows notification), **app shortcuts** (drop a file on the island to pin it).
 - **5 mascots** (Kiko, Miso the cat, Bun the bunny, Bolt the robot, Ribbit the frog). They blink, peek out to say hi when the island is hidden, squish when clicked, and get dizzy if you click three times fast.
 - **Widgets you choose** (Settings → Widgets): time, weather (Open-Meteo, no account), laptop battery and Bluetooth device batteries, in the resting pill and/or the open island.
 - **Apple-style live activities:** Timer (orange ring + countdown; start it from the right-click menu), charging / low-battery, volume level, Bluetooth connect with battery, Caps/Num Lock, and the orange/green mic/camera privacy dot. With two activities at once, the second sits in a small detached circle beside the pill, like iPhone's "minimal" state. Mouse wheel switches tabs; click the progress bar to seek.
-- **Calendar tab:** today's date with month progress, your **Google Calendar or Outlook** events (whichever account you signed in with for mail), and your own tasks ("Gym 5:30 PM"); a heads-up 10 minutes before each.
+- **Calendar tab:** today's date with month progress, and your own tasks ("Gym 5:30 PM"); a heads-up 10 minutes before each.
 - **System tab:** CPU, memory, disk, network, plus Lock · Sleep · Restart · Shut down. **Notch** shape option and an accent that follows Windows (and your wallpaper).
 - **Pinned apps from a real app list**: "+" opens your installed apps (desktop and Store, searchable), not a file browser.
 - Drag to move, edge snapping, auto-hide in fullscreen, dark/light themes, tray icon.
@@ -68,9 +67,8 @@ Turn on **coding mode** with the `</>` button on the island: the mascot puts on 
 
 - No accounts, no cloud sync, no telemetry, no analytics.
 - Settings: `%LOCALAPPDATA%\KawaiiIsland\config.json` (local, not roaming). macOS: `~/Library/Application Support/KawaiiIsland/`.
-- Mail passwords are encrypted with Windows DPAPI (current user, this machine). On macOS they go in the login Keychain with iCloud sync disabled. They are never written to `config.json`.
 - Mirrored notifications are kept in memory only (last 20) and disappear when the app quits. Only the names of apps you mute are saved.
-- The only network traffic is to **your own mail server** if you turn on IMAP, and to **Open-Meteo** for weather (just the city you typed, or your location rounded to about 10 km). Turn the weather widgets off and nothing is sent.
+- The only network traffic is to **Open-Meteo** for weather (just the city you typed, or your location rounded to about 10 km). Turn the weather widgets off and nothing is sent.
 
 ## Build from source
 
@@ -85,7 +83,7 @@ dotnet run --project src/KawaiiIsland
 
 Build the npm package (maintainers; needs the .NET 8 SDK): `cd installer/npm && npm run build` publishes a single self-contained `dist/KawaiiIsland.exe`; `npm pack` / `npm publish` run it automatically.
 
-`--data <folder>` runs with a separate settings folder (handy for demos; the screenshots above use mock mail and notifications). Development builds never register themselves to start with Windows unless you turn it on in Settings.
+`--data <folder>` runs with a separate settings folder (handy for demos; the screenshots above use mock notifications). Development builds never register themselves to start with Windows unless you turn it on in Settings.
 
 **Logs:** `%LOCALAPPDATA%\KawaiiIsland\logs\yyyy-MM-dd.log` (last 7 days). They contain app events and errors only, never message contents or passwords.
 
@@ -128,36 +126,10 @@ Mascot art has a single source: `design/mascot/mascot.js`. Regenerate the SVGs a
 - [x] 6 · Auto-hide in fullscreen and the mascot peek
 - [x] 7 · Music (SMTC)
 - [x] 8 · Notifications mirroring
-- [x] 9 · Mail (demo inbox + IMAP with IDLE, DPAPI password)
+- [x] 9 · Mail (later removed: mail arrives as notifications instead)
 - [x] 10 · Shortcuts (pinned apps, file-drop box, reorder, run as admin)
 - [x] 11 · Polish: start with Windows, Ctrl+Alt+I hotkey, file logging, sleepy mascot, dynamic height, screenshots
 - [ ] Installers: Windows setup `.exe` and macOS `.dmg` (built in GitHub Actions)
-
-## Mail
-
-Settings → Mail → **Account**:
-
-- **Gmail** / **Outlook** — click **Sign in with Google / Microsoft**. Your browser opens the provider's own sign-in page (your password never touches Kawaii Island), and the app keeps only a refresh token, encrypted for your Windows user (`mail.oauth`, DPAPI). It reads INBOX read-only over IMAP with that token (`imap.gmail.com`, `outlook.office365.com`): unread **headers only**, new mail via IMAP IDLE.
-- **Other (IMAP)** — server, username and an app password (DPAPI-encrypted in `mail.secret`).
-- **Demo** — sample messages, no account.
-
-New mail updates the badge and makes the mascot hop; it never pops the island open. Subjects only show when *Show message previews* is on. Clicking opens Gmail / Outlook on the web (or `openUrl`).
-
-### For maintainers: built-in sign-in (one-time, never done by users)
-
-Users only click **Sign in with Google / Microsoft**. The OAuth client IDs are registered once by whoever ships Kawaii Island and baked into the build from environment variables (they are not stored in this repo):
-
-```powershell
-$env:KAWAII_MICROSOFT_CLIENT_ID = "<Application (client) ID>"
-$env:KAWAII_GOOGLE_CLIENT_ID     = "<…apps.googleusercontent.com>"
-$env:KAWAII_GOOGLE_CLIENT_SECRET = "<desktop-app client secret>"
-cd installer/npm; npm run build      # or dotnet build / publish
-```
-
-- **Microsoft** — [Entra admin center](https://entra.microsoft.com) → App registrations → New → *Accounts in any organizational directory and personal Microsoft accounts* → Redirect URI *Public client/native* `http://localhost` → API permissions: `IMAP.AccessAsUser.All`, `offline_access`, `openid`, `email`. Free.
-- **Google** — [Cloud console](https://console.cloud.google.com) → enable **Gmail API** → OAuth consent screen → Credentials → OAuth client ID → **Desktop app**. The `https://mail.google.com/` scope is *restricted*: up to 100 test users until Google verifies the app.
-
-A build without these shows "isn't available in this build" for Gmail/Outlook sign-in; IMAP with an app password still works.
 
 ## Known limitations
 

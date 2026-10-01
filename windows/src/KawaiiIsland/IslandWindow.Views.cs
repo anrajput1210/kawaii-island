@@ -9,7 +9,7 @@ namespace KawaiiIsland;
 /// </summary>
 public partial class IslandWindow
 {
-    private enum View { Home, Music, Code, Alerts, Mail, Apps, Timer, Calendar, System }
+    private enum View { Home, Music, Code, Alerts, Apps, Timer, Calendar, System }
 
     private View _view = View.Home;
     private View? _picked;   // tab the user chose; null = automatic
@@ -63,7 +63,6 @@ public partial class IslandWindow
         Clock.Visibility = Vis(!minimal && !music && !flash && !hud && !timer && (Widgets.PillClock || code || dropping));
         PillWeather.Visibility = Vis(rest && Widgets.PillWeather && _weather is not null);
         PillBattery.Visibility = Vis(rest && Widgets.PillBattery && _battery is not null);
-        MailBadge.Visibility = Vis(rest && Unread > 0);
 
         // Key line takes the tint of the active content (design guidelines: "Shell").
         Color? tint = hud ? _hud!.Tint == Colors.White ? null : _hud.Tint
@@ -71,7 +70,6 @@ public partial class IslandWindow
                     : code ? CodeColor(_tracker.Active?.State)
                     : flash ? AvatarColor(_flash!.App)
                     : music ? MusicTint
-                    : Unread > 0 ? MailTint
                     : CodeMode ? Accent()
                     : null;
         // Subtle key line (Apple): a faint hint of the activity colour, otherwise an almost invisible hairline.
@@ -82,14 +80,13 @@ public partial class IslandWindow
 
     private void RenderExpanded()
     {
-        bool code = CodeMode, music = _media is not null, alerts = _feed.Items.Count > 0, mail = _mail is not null, apps = AppsOn, timer = _timer.Active,
+        bool code = CodeMode, music = _media is not null, alerts = _feed.Items.Count > 0, apps = AppsOn, timer = _timer.Active,
              calendar = CalendarOn, system = SystemOn;
         _view = _picked switch
         {
             View.Code when code => View.Code,
             View.Music when music => View.Music,
             View.Alerts when alerts => View.Alerts,
-            View.Mail when mail => View.Mail,
             View.Apps when apps => View.Apps,
             View.Timer when timer => View.Timer,
             View.Calendar when calendar => View.Calendar,
@@ -98,11 +95,11 @@ public partial class IslandWindow
             _ when timer => View.Timer,
             _ when _flash is not null => View.Alerts,
             _ when music && _media!.Playing => View.Music,
-            _ => code ? View.Code : music ? View.Music : Unread > 0 ? View.Mail : alerts ? View.Alerts : View.Home,
+            _ => code ? View.Code : music ? View.Music : alerts ? View.Alerts : View.Home,
         };
-        bool tabs = (code ? 1 : 0) + (music ? 1 : 0) + (alerts ? 1 : 0) + (mail ? 1 : 0) + (apps ? 1 : 0) + (timer ? 1 : 0)
+        bool tabs = (code ? 1 : 0) + (music ? 1 : 0) + (alerts ? 1 : 0) + (apps ? 1 : 0) + (timer ? 1 : 0)
                     + (calendar ? 1 : 0) + (system ? 1 : 0) > 1;
-        bool header = _view is View.Music or View.Alerts or View.Mail or View.Apps or View.Timer or View.Calendar or View.System;
+        bool header = _view is View.Music or View.Alerts or View.Apps or View.Timer or View.Calendar or View.System;
         TabCalendar.Visibility = Vis(calendar);
         TabCalendar.IsChecked = _view == View.Calendar;
         TabSystem.Visibility = Vis(system);
@@ -121,12 +118,9 @@ public partial class IslandWindow
         TabMusic.IsChecked = _view == View.Music;
         TabCode.IsChecked = _view == View.Code;
         TabAlerts.IsChecked = _view == View.Alerts;
-        TabMail.Visibility = Vis(mail);
-        TabMail.IsChecked = _view == View.Mail;
         TabApps.Visibility = Vis(apps);
         TabApps.IsChecked = _view == View.Apps;
         AppsPanel.Visibility = Vis(_view == View.Apps || (_view == View.Home && apps)); // Home: clock + your apps
-        MailPanel.Visibility = Vis(_view == View.Mail);
         MascotTiny.Visibility = SmallClock.Visibility = CodeToggleSmall.Visibility = Vis(header); // one </> button per view
         MainRow.Visibility = Vis(!header);
         ClockBlock.Visibility = Vis(_view == View.Home && Widgets.HomeClock);

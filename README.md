@@ -127,12 +127,21 @@ Settings → Mail → **Account**:
 
 New mail updates the badge and makes the mascot hop; it never pops the island open. Subjects only show when *Show message previews* is on. Clicking opens Gmail / Outlook on the web (or `openUrl`).
 
-### Mail sign-in: app registrations (one-time, for whoever builds/ships the app)
+### For maintainers: built-in sign-in (one-time, never done by users)
 
-Sign-in needs an OAuth "client ID" from each provider. Client IDs aren't secrets; paste them in Settings → Mail → *App registration*.
+Users only click **Sign in with Google / Microsoft**. The OAuth client IDs are registered once by whoever ships Kawaii Island and baked into the build from environment variables (they are not stored in this repo):
 
-- **Microsoft (Outlook.com, Hotmail, Microsoft 365)** — [Microsoft Entra admin center](https://entra.microsoft.com) → App registrations → New registration → *Accounts in any organizational directory and personal Microsoft accounts* → Redirect URI: *Public client/native (mobile & desktop)* `http://localhost` → API permissions → add *Office 365 Exchange Online* (or *Microsoft Graph*) → `IMAP.AccessAsUser.All`, plus `offline_access`, `openid`, `email`. Copy the **Application (client) ID**. Free.
-- **Google (Gmail)** — [Google Cloud console](https://console.cloud.google.com) → new project → enable **Gmail API** → OAuth consent screen (External; add yourself under *Test users*) → Credentials → Create OAuth client ID → **Desktop app**. Copy the **client ID** and **client secret** (for desktop apps Google treats it as public). Gmail's `https://mail.google.com/` scope is *restricted*: up to 100 test users work right away; a public release needs Google's verification.
+```powershell
+$env:KAWAII_MICROSOFT_CLIENT_ID = "<Application (client) ID>"
+$env:KAWAII_GOOGLE_CLIENT_ID     = "<…apps.googleusercontent.com>"
+$env:KAWAII_GOOGLE_CLIENT_SECRET = "<desktop-app client secret>"
+cd installer/npm; npm run build      # or dotnet build / publish
+```
+
+- **Microsoft** — [Entra admin center](https://entra.microsoft.com) → App registrations → New → *Accounts in any organizational directory and personal Microsoft accounts* → Redirect URI *Public client/native* `http://localhost` → API permissions: `IMAP.AccessAsUser.All`, `offline_access`, `openid`, `email`. Free.
+- **Google** — [Cloud console](https://console.cloud.google.com) → enable **Gmail API** → OAuth consent screen → Credentials → OAuth client ID → **Desktop app**. The `https://mail.google.com/` scope is *restricted*: up to 100 test users until Google verifies the app.
+
+A build without these shows "isn't available in this build" for Gmail/Outlook sign-in; IMAP with an app password still works.
 
 ## Known limitations
 

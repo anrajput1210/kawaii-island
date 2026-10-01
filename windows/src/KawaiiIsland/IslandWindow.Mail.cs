@@ -84,8 +84,12 @@ public partial class IslandWindow
         ((App)Application.Current).RefreshSettings();
     }
 
-    internal (string Id, string Secret) ClientFor(OAuthProvider p) =>
-        p.Key == "google" ? (MailCfg.GoogleClientId.Trim(), MailCfg.GoogleClientSecret.Trim()) : (MailCfg.MicrosoftClientId.Trim(), "");
+    /// <summary>The client built into the app; config.json can override it for development (no UI: users never register apps).</summary>
+    internal (string Id, string Secret) ClientFor(OAuthProvider p)
+    {
+        var (id, secret) = p.Key == "google" ? (MailCfg.GoogleClientId.Trim(), MailCfg.GoogleClientSecret.Trim()) : (MailCfg.MicrosoftClientId.Trim(), "");
+        return id.Length > 0 ? (id, secret) : p.BuiltInClient;
+    }
 
     private void StopMail()
     {

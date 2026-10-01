@@ -212,7 +212,7 @@ public sealed class MailConfig
     public bool Ssl { get; set; } = true;
     public string Username { get; set; } = "";
     public int PollSeconds { get; set; } = 60;
-    /// <summary>OAuth app registrations for "Sign in with Google / Microsoft" (not secrets; see README → Mail sign-in).</summary>
+    /// <summary>Developer overrides for the built-in OAuth clients (config.json only, no UI; see README → For maintainers).</summary>
     public string GoogleClientId { get; set; } = "";
     public string GoogleClientSecret { get; set; } = "";
     public string MicrosoftClientId { get; set; } = "";

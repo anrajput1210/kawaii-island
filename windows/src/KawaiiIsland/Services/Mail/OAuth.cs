@@ -23,6 +23,13 @@ public sealed record OAuthProvider(string Key, string Name, string AuthUrl, stri
 
     public static OAuthProvider? For(string key) => key switch { "google" => Google, "microsoft" => Microsoft, _ => null };
 
+    /// <summary>Client ID/secret built into this copy of the app (see csproj); empty when the build has none.</summary>
+    public (string Id, string Secret) BuiltInClient => (Metadata($"{Name}ClientId"), Metadata($"{Name}ClientSecret"));
+
+    private static string Metadata(string key) =>
+        typeof(OAuthProvider).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
+            .Cast<System.Reflection.AssemblyMetadataAttribute>().FirstOrDefault(a => a.Key == key)?.Value?.Trim() ?? "";
+
     /// <summary>Microsoft only accepts http://localhost for desktop apps; Google prefers the 127.0.0.1 literal.</summary>
     public string RedirectUri(int port) => Key == "microsoft" ? $"http://localhost:{port}/" : $"http://127.0.0.1:{port}/";
 }
@@ -45,7 +52,7 @@ public static class OAuth
     /// <returns>The account, or throws <see cref="OAuthException"/> with a friendly message.</returns>
     public static async Task<OAuthAccount> SignInAsync(OAuthProvider provider, string clientId, string clientSecret, CancellationToken ct)
     {
-        if (clientId.Length == 0) throw new OAuthException($"Add your {provider.Name} client ID first (see README → Mail sign-in).");
+        if (clientId.Length == 0) throw new OAuthException($"Sign in with {provider.Name} isn't available in this build of Kawaii Island.");
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromMinutes(3));
 

@@ -55,6 +55,7 @@ public sealed class MascotControl : Image
     /// "none" → no picture.</summary>
     public static ImageSource? Art(string skin, string expression, string outfit = "")
     {
+        if (expression.StartsWith("box.")) return (ImageSource)Application.Current.FindResource("Mascot." + expression); // file-drop form
         if (skin == AppConfig.NoMascot) return null;
         string suffix = outfit.Length > 0 ? "." + outfit : "";
         return (ImageSource)(Application.Current.TryFindResource($"Mascot.{skin}.{expression}{suffix}")

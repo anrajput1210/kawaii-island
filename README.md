@@ -70,7 +70,7 @@ Mascot art has a single source: `design/mascot/mascot.js`. Regenerate the SVGs a
 - [x] 7 · Music (SMTC)
 - [x] 8 · Notifications mirroring
 - [x] 9 · Mail (demo inbox + IMAP with IDLE, DPAPI password)
-- [ ] 10 · App shortcuts and file drop
+- [x] 10 · Shortcuts (pinned apps, file-drop box, reorder, run as admin)
 - [ ] 11 · Polish, themes, start with Windows, logging
 - [ ] Installers: Windows setup `.exe` and macOS `.dmg` (built in GitHub Actions)
 

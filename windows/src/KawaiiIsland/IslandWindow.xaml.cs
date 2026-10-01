@@ -68,6 +68,7 @@ public partial class IslandWindow : Window
         Pill.SizeChanged += (_, _) => SizeOutline();
         Pill.MouseRightButtonUp += (_, e) =>
         {
+            if (IsInTile(e.OriginalSource as DependencyObject)) return; // app tiles have their own menu
             e.Handled = true;
             var menu = ((App)Application.Current).IslandMenu();
             menu.PlacementTarget = Pill;
@@ -86,6 +87,7 @@ public partial class IslandWindow : Window
         InitViews();
         InitAlerts();
         InitMail();
+        InitShortcuts();
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -131,7 +133,7 @@ public partial class IslandWindow : Window
     {
         var now = DateTime.Now;
         BigClock.Text = now.ToString("t");
-        if (CodeLinePanel.Visibility != Visibility.Visible) Clock.Text = BigClock.Text; // Code mode shows usage there
+        if (CodeLinePanel.Visibility != Visibility.Visible && _dropText is null) Clock.Text = BigClock.Text; // Code mode shows usage there
         DateText.Text = now.ToString("dddd, MMMM d");
         SmallClock.Text = BigClock.Text;
         TickMusic();
@@ -527,6 +529,13 @@ public partial class IslandWindow : Window
     {
         _baseExpression = expression;
         if (_mood is null) SetMood(null);
+    }
+
+    private static bool IsInTile(DependencyObject? d)
+    {
+        for (; d is not null; d = d is Visual or System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d))
+            if (d is Button { Tag: ShortcutItem }) return true;
+        return false;
     }
 
     // ---------------- visibility ----------------

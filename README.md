@@ -88,6 +88,18 @@ Build the npm package (maintainers; needs the .NET 8 SDK): `cd installer/npm && 
 
 **Logs:** `%LOCALAPPDATA%\KawaiiIsland\logs\yyyy-MM-dd.log` (last 7 days). They contain app events and errors only, never message contents or passwords.
 
+## macOS
+
+The Mac app is the iPhone Dynamic Island, grown out of the MacBook's camera notch (a virtual notch on Macs and displays without one). Native Swift, macOS 13+, Apple silicon and Intel; download the DMG from the latest **build** run's artifacts.
+
+- **Compact** (content on either side of the camera), **expanded** (click; hover optional), and the detached **minimal** bubble when two activities run.
+- **Calls:** FaceTime (including iPhone calls relayed to the Mac), Zoom, Teams, WhatsApp, Discord: duration, video indicator, Mute, Open, End.
+- **Music:** Apple Music and Spotify: artwork, waveform tinted by the art, scrubber, play/pause/skip.
+- **Timer**, **volume**, **charging / low battery**, **AirPods & Bluetooth connected**, **unlock**, **Caps Lock**.
+- Menu bar icon: start a timer, turn each source on or off, Open at Login.
+
+macOS has no public API for another app's call state, so a call shows once it's answered (call app running + microphone live); incoming calls ring through macOS's own banner. Third-party Live Activities (sports, deliveries, Maps) don't exist on the Mac.
+
 ## Design guidelines
 
 The island follows Apple's Live Activities guidelines adapted to Windows: one glanceable thing at a time; compact, minimal (44 px circle on side docks) and expanded states; a thin key line tinted by the active content; medium-weight type; animations under a second that switch off with Windows "Animation effects"; sensitive text hidden by default; activities end promptly and every source can be turned off.
@@ -97,7 +109,7 @@ The island follows Apple's Live Activities guidelines adapted to Windows: one gl
 | Path | What |
 |---|---|
 | `windows/` | WPF app (`src/KawaiiIsland`) + xUnit tests |
-| `macos/` | Native Swift app (coming) |
+| `macos/` | Native Swift app (SwiftPM; `sh macos/scripts/bundle.sh` builds the `.app` + DMG) |
 | `design/` | Interactive mockup, design tokens, mascot source (`mascot/mascot.js`) and generators |
 | `installer/` | Windows installer + macOS DMG packaging (coming) |
 

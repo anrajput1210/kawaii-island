@@ -405,11 +405,10 @@ public partial class IslandWindow : Window
 
         if (expand)
         {
-            Fade(CollapsedPanel, 0, 120);
+            Fade(CollapsedPanel, 0, 70); // gone before the open content arrives: never both at once
+            // Content fades in once, already in its final place; the growing island reveals it (as on iPhone).
             ExpandedPanel.Visibility = Visibility.Visible;
-            ExpandedPanel.BeginAnimation(OpacityProperty, null);
-            ExpandedPanel.Opacity = 1;
-            StaggerIn(ExpandedItems);
+            ExpandedPanel.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, Motion.Ms(260)) { BeginTime = Motion.Delay(80), EasingFunction = Motion.Smooth });
             ArmAutoCollapse();
         }
         else
@@ -505,14 +504,6 @@ public partial class IslandWindow : Window
         if (!_expanded || _picking || Pill.IsMouseOver || _approval is not null || _media is { Playing: true }) return;
         _autoCollapse.Interval = TimeSpan.FromSeconds(seconds);
         _autoCollapse.Start();
-    }
-
-    /// <summary>Content fades in where it will stay (no slide): the growing island reveals it, as on iPhone.</summary>
-    private static void StaggerIn(Panel panel)
-    {
-        int i = 0;
-        foreach (UIElement child in panel.Children)
-            child.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, Motion.Ms(220)) { BeginTime = Motion.Delay(60 + i++ * 30), EasingFunction = Motion.Smooth });
     }
 
     private static void Fade(UIElement el, double to, int ms, Action? done = null, int delayMs = 0)

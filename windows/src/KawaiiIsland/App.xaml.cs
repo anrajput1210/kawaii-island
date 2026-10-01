@@ -52,6 +52,9 @@ public partial class App : Application
     {
         var menu = new ContextMenu();
         menu.Items.Add(MenuItem("Show / hide", () => _island!.ToggleVisible()));
+        var unlock = new MenuItem { Header = "Unlock to drag", IsCheckable = true, IsChecked = !_island!.Locked };
+        unlock.Click += (_, _) => _island.SetLocked(!unlock.IsChecked); // IsChecked already flipped by the click
+        menu.Items.Add(unlock);
         menu.Items.Add(new Separator());
         menu.Items.Add(MenuItem("Quit", Shutdown));
 

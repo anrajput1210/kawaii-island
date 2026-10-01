@@ -6,7 +6,7 @@ A cute, customizable **Dynamic Island for Windows 11** (macOS version in progres
 
 **It never covers your browser tabs.** The island reserves its own strip of screen as a Desktop AppBar, so maximized windows stop below it instead of sliding underneath.
 
-> **Status: early development.** Phases 1–2 (skeleton, animations) are done. See [Roadmap](#roadmap). Try the design in your browser: open [`design/mockup/index.html`](design/mockup/index.html).
+> **Status: early development.** Phases 1–3 (skeleton, animations, drag & snap) are done. See [Roadmap](#roadmap). Try the design in your browser: open [`design/mockup/index.html`](design/mockup/index.html).
 
 ## Features (planned for v0.1)
 
@@ -50,7 +50,7 @@ Mascot art has a single source: `design/mascot/mascot.js`. Regenerate the SVGs a
 - [x] 0 · Design mockup, repo
 - [x] 1 · Skeleton: borderless topmost pill, tray icon, single instance, config service
 - [x] 2 · Animations: expand/collapse spring, hover, mascot moods
-- [ ] 3 · Drag, snap, position persistence
+- [x] 3 · Drag, snap, position persistence
 - [ ] 4 · AppBar workspace reservation
 - [ ] 5 · Settings window and right-click menu
 - [ ] 6 · Auto-hide in fullscreen and the mascot peek

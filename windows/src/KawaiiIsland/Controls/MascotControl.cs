@@ -93,6 +93,7 @@ public sealed class MascotControl : Image
     private void Refresh()
     {
         string expression = _blinking ? "blink" : Expression;
+        if (Skin == AppConfig.CustomMascot && CustomArt() is { } picture) { Source = CustomFace(picture, expression); _tracking = true; return; }
         string key = $"Mascot.{Skin}.{expression}{(Outfit.Length > 0 ? "." + Outfit : "")}";
         if (Layer(key, "under") is { } under && Layer(key, "eyes") is { } eyes && Layer(key, "over") is { } over)
         {
@@ -106,6 +107,36 @@ public sealed class MascotControl : Image
         }
         _tracking = false;
         Source = Art(Skin, expression, Outfit);
+    }
+
+    /// <summary>
+    /// A user's picture gets every mascot feature without knowing where its eyes are: it leans toward the cursor,
+    /// poses per expression (blink squash, hover grow, sleepy droop…), wears the hoodie + glasses in coding mode,
+    /// and shows the shared expression marks (!, zz, anger, dizzy/happy sparkles). Squish/wobble/hop/breathing come
+    /// from the control's own transforms like any skin.
+    /// </summary>
+    private DrawingImage CustomFace(ImageSource picture, string expression)
+    {
+        var group = new DrawingGroup();
+        group.Children.Add(new GeometryDrawing(Brushes.Transparent, null, new RectangleGeometry(new Rect(0, 0, 64, 64)))); // fixed bounds
+        bool code = Outfit == "code";
+        if (code && Layer("Mascot.custom.hoodie", "under") is { } hood) group.Children.Add(hood);
+
+        var (sx, sy) = expression switch
+        {
+            "wow" => (1.08, 1.08),
+            "surprised" => (1.05, 1.05),
+            "blink" => (1.0, 0.9),
+            "sleepy" => (1.02, 0.94),
+            "annoyed" => (1.05, 0.95),
+            _ => (1.0, 1.0),
+        };
+        var pose = new TransformGroup { Children = { new ScaleTransform(sx, sy, 32, 31), _eyeShift } };
+        group.Children.Add(new DrawingGroup { Children = { new ImageDrawing(picture, new Rect(code ? 9 : 6, code ? 8 : 5, code ? 46 : 52, code ? 46 : 52)) }, Transform = pose });
+
+        if (code && Layer("Mascot.custom.hoodie", "over") is { } glasses) group.Children.Add(glasses);
+        if (Layer("Mascot.custom.extra", expression) is { } marks) group.Children.Add(marks);
+        return new DrawingImage(group);
     }
 
     /// <summary>Shared resource drawings are frozen once so every mascot can reuse them.</summary>

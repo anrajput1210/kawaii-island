@@ -93,7 +93,7 @@ public sealed class AppConfig
     public static readonly string[] Mascots = ["kiko", "miso", "bun", "bolt", "ribbit"];
     /// <summary>"none" hides the mascot; "custom" uses the user's own picture (copied to <see cref="CustomMascotPath"/>).</summary>
     public const string NoMascot = "none", CustomMascot = "custom";
-    public static string CustomMascotPath => Path.Combine(ConfigService.DefaultDirectory, "custom-mascot");
+    public static string CustomMascotPath => Path.Combine(ConfigService.DefaultDirectory, "custom-mascot.png");
 
     public int Version { get; set; } = 1;
     public WindowConfig Window { get; set; } = new();

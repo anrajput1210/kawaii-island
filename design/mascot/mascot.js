@@ -91,6 +91,14 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true"><rect x="12" y="28" width="40" height="28" rx="3.5" fill="#E8B98A" stroke="#B9824F" stroke-width="1.4"/>${lid}${faceParts}${blush(48)}</svg>`;
   }
 
-  const api = { face, layers, svg, box, SKINS, EXPRESSIONS: Object.keys(EYES), TRACKING: ['idle', 'surprised', 'wow'] };
+  // Overlays for a user's own picture (the app draws the picture itself): outfit + expression marks.
+  // happy gets sparkles here because the built-in faces show happy with their eyes/mouth instead.
+  const customOverlays = {
+    'hoodie.under': hoodie,
+    'hoodie.over': strings + glasses(27),
+    ...Object.fromEntries(Object.entries({ ...EXTRA, happy: sparkle(9, 12) + sparkle(55, 10, 2.5) }).map(([k, v]) => [`extra.${k}`, v])),
+  };
+
+  const api = { face, layers, svg, box, customOverlays, SKINS, EXPRESSIONS: Object.keys(EYES), TRACKING: ['idle', 'surprised', 'wow'] };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.Mascot = api;
 })(this);

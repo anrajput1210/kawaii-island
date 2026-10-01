@@ -167,7 +167,7 @@ public partial class App : Application
     internal static string MascotName(string key) => key switch
     {
         "kiko" => "Kiko · anime girl", "miso" => "Miso · cat", "bun" => "Bun · bunny", "bolt" => "Bolt · robot", "ribbit" => "Ribbit · frog",
-        AppConfig.NoMascot => "No mascot", AppConfig.CustomMascot => "Your own picture", _ => key,
+        AppConfig.NoMascot => "No mascot", AppConfig.CustomMascot => "Custom mascot", _ => key,
     };
 
     /// <summary>Persist (debounced 500 ms) and re-apply to the island (debounced 150 ms, re-docks the AppBar).</summary>

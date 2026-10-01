@@ -29,7 +29,7 @@ public partial class IslandWindow
 
     private void InitMusic()
     {
-        _eqBars = [.. BuildEq(Eq), .. BuildEq(BigEq)];
+        _eqBars = [.. BuildEq(Eq), .. BuildEq(BigEq), .. BuildEq(BubbleEq)];
         PrevButton.Click += (_, _) => _mediaService?.Previous();
         PlayButton.Click += (_, _) => _mediaService?.PlayPause();
         NextButton.Click += (_, _) => _mediaService?.Next();
@@ -105,7 +105,6 @@ public partial class IslandWindow
     }
 
     /// <summary>Hover glow follows the album art while the music pill is showing.</summary>
-    private Color GlowColor() => MusicLinePanel.Visibility == Visibility.Visible && _media?.Tint is { } t ? t : Accent();
 
     // ---------------- equalizer ----------------
 

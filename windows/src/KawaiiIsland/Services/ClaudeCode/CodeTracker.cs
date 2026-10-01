@@ -8,6 +8,8 @@ public enum CodeState { Idle, Thinking, Tool, NeedsYou, Done }
 public sealed class CodeSession
 {
     public required string Id { get; init; }
+    /// <summary>"Claude Code", "Codex", "Gemini CLI", "Cursor"… whatever the agent calls itself.</summary>
+    public string Agent { get; set; } = "Claude Code";
     public string Project { get; set; } = "";
     public CodeState State { get; set; } = CodeState.Idle;
     /// <summary>"Bash · npm test", "Allow Edit · App.cs?", a notification message…</summary>
@@ -22,8 +24,8 @@ public sealed class CodeSession
 public sealed record UsageWindow(double UsedPct, DateTimeOffset ResetsAt);
 
 /// <summary>
-/// Turns Claude Code hook events and status-line snapshots (both documented JSON, posted to the local HookServer)
-/// into per-session state. Pure: no IO, no UI, everything stays in memory. Unit-tested.
+/// Turns agent activity into per-session state: Claude Code hook events + status line (built-in), Codex's notify
+/// payload, and the agent-neutral event format any tool can POST. Pure: no IO, no UI, memory only. Unit-tested.
 /// </summary>
 public sealed class CodeTracker
 {
@@ -62,6 +64,53 @@ public sealed class CodeTracker
         s.Updated = now;
         Changed?.Invoke();
     }
+
+    /// <summary>
+    /// Agent-neutral event (POST /kawaii/event), for any agentic tool:
+    /// { "agent": "Gemini CLI", "session": "abc", "cwd": "C:\\code\\app", "state": "working|tool|needs_input|done|idle|end", "detail": "npm test" }
+    /// Only "agent" and "state" are needed; session defaults to agent + folder.
+    /// </summary>
+    public void OnEvent(JsonElement e, DateTimeOffset now)
+    {
+        string agent = Clip(Str(e, "agent"), 24) is { Length: > 0 } a ? a : "Agent";
+        string id = Str(e, "session") is { Length: > 0 } sid ? sid : $"{agent}:{Str(e, "cwd")}{Str(e, "project")}";
+        string state = Str(e, "state").ToLowerInvariant();
+        if (state is "end" or "exit" or "closed")
+        {
+            if (_sessions.Remove(id)) Changed?.Invoke();
+            return;
+        }
+        CodeState? mapped = state switch
+        {
+            "thinking" or "working" or "running" or "start" => CodeState.Thinking,
+            "tool" => CodeState.Tool,
+            "needs_input" or "needs_you" or "waiting" or "permission" => CodeState.NeedsYou,
+            "done" or "finished" or "complete" or "stop" => CodeState.Done,
+            "idle" => CodeState.Idle,
+            _ => null,
+        };
+        if (mapped is not { } st) return;
+        var s = Get(id, e);
+        s.Agent = agent;
+        if (Str(e, "project") is { Length: > 0 } project) s.Project = Clip(project, 40);
+        Set(s, st, Clip(Str(e, "detail").ReplaceLineEndings(" "), 60));
+        s.Updated = now;
+        Changed?.Invoke();
+    }
+
+    /// <summary>Codex CLI `notify` payload (sent when a turn finishes): agent-turn-complete → Done.</summary>
+    public void OnCodex(JsonElement e, DateTimeOffset now)
+    {
+        if (Str(e, "type") != "agent-turn-complete") return;
+        string id = "codex:" + (Str(e, "thread-id") is { Length: > 0 } t ? t : Str(e, "cwd"));
+        var s = Get(id, e);
+        s.Agent = "Codex";
+        Set(s, CodeState.Done, Clip(Str(e, "last-assistant-message").ReplaceLineEndings(" "), 60));
+        s.Updated = now;
+        Changed?.Invoke();
+    }
+
+    private static string Clip(string text, int max) => text.Length > max ? text[..(max - 1)].TrimEnd() + "…" : text.Trim();
 
     /// <summary>Status-line snapshot: model, context %, cost for the session; 5-hour / 7-day plan usage for the account.</summary>
     public void OnStatus(JsonElement e, DateTimeOffset now)

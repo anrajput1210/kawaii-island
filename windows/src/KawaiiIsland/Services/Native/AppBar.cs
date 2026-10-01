@@ -51,11 +51,23 @@ internal sealed class AppBarService : IDisposable
     /// <summary>Releases the reservation; the work area returns to normal immediately.</summary>
     public void Undock()
     {
+        var monitor = _dock?.Monitor;
         _dock = null;
         if (!_registered || _strip is null) return;
         var abd = NewData(_strip.Handle);
         SHAppBarMessage(ABM_REMOVE, ref abd);
         _registered = false;
+        if (monitor is not null) RefitMaximizedWindows(monitor.Device);
+    }
+
+    /// <summary>
+    /// ABM_REMOVE frees the work area, but windows that are already maximized keep their smaller size and leave
+    /// an empty strip. Re-applying the monitor's (now full) work area with SPIF_SENDCHANGE makes Windows re-fit them.
+    /// </summary>
+    private static void RefitMaximizedWindows(string device)
+    {
+        var work = ToRECT(Monitors.ByDevice(device).Work); // fresh query: reservation already released
+        SystemParametersInfo(SPI_SETWORKAREA, 0, ref work, SPIF_SENDCHANGE);
     }
 
     public void Dispose()
@@ -127,6 +139,8 @@ internal sealed class AppBarService : IDisposable
         public nint lParam;
     }
 
+    private const uint SPI_SETWORKAREA = 0x002F, SPIF_SENDCHANGE = 0x2;
+    [DllImport("user32.dll")] private static extern bool SystemParametersInfo(uint action, uint param, ref RECT rect, uint winIni);
     [DllImport("shell32.dll")] private static extern nuint SHAppBarMessage(uint msg, ref APPBARDATA data);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int RegisterWindowMessage(string name);
     [DllImport("user32.dll")] private static extern bool SetLayeredWindowAttributes(nint hwnd, uint key, byte alpha, uint flags);

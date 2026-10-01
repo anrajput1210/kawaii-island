@@ -1,22 +1,60 @@
 <Window x:Class="KawaiiIsland.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Kawaii Island · Settings" Width="600" Height="780" MinWidth="480" MinHeight="420"
+        Title="Kawaii Island · Settings" Width="900" Height="660" MinWidth="720" MinHeight="460"
         WindowStartupLocation="CenterScreen" Icon="pack://application:,,,/Assets/icon.ico"
         Background="{DynamicResource SettingsBackground}" Foreground="{DynamicResource IslandText}"
         FontFamily="{DynamicResource IslandFont}" FontSize="13" UseLayoutRounding="True">
     <Window.Resources>
+        <!-- Small heading above a group of cards on a page -->
         <Style x:Key="Section" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Margin" Value="2,22,0,8"/>
+            <Setter Property="Margin" Value="2,24,0,10"/>
         </Style>
+        <!-- One group of settings rows (Windows 11 style: flat panel, hairline border, soft corners) -->
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource SettingsPanel}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource SettingsLine}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="16,10,16,12"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="20,8,20,10"/>
+        </Style>
+        <!-- Sidebar page link: glyph + label; selected = bold bright text with a thin accent bar (no pill) -->
+        <Style x:Key="NavItem" TargetType="RadioButton">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="{DynamicResource IslandMuted}"/>
+            <Setter Property="FontSize" Value="13.5"/>
+            <Setter Property="GroupName" Value="nav"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Grid Background="Transparent" Height="38" Margin="0,1">
+                            <Rectangle x:Name="Bar" Width="3" Height="16" RadiusX="1.5" RadiusY="1.5" HorizontalAlignment="Left"
+                                       Fill="{DynamicResource Accent}" Visibility="Hidden"/>
+                            <StackPanel Orientation="Horizontal" Margin="14,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="{TemplateBinding Tag}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16"
+                                           VerticalAlignment="Center" Width="22"/>
+                                <ContentPresenter Margin="10,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bar" Property="Visibility" Value="Visible"/>
+                                <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bar" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Toggle switch (keyboard: Tab to focus, Space to toggle) -->
@@ -26,7 +64,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
-                        <DockPanel Background="Transparent" Margin="0,6">
+                        <DockPanel Background="Transparent">
                             <Grid DockPanel.Dock="Right" Width="38" Height="22" VerticalAlignment="Center">
                                 <Border x:Name="Track" CornerRadius="11" Background="{DynamicResource SettingsLine}"/>
                                 <Ellipse x:Name="Knob" Width="16" Height="16" Fill="White" HorizontalAlignment="Left" Margin="3,0"/>
@@ -104,42 +142,81 @@
         </Style>
     </Window.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
-        <StackPanel Margin="24,18,24,24">
-            <DockPanel>
-                <Image x:Name="HeaderMascot" Width="44" Height="44"/>
-                <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
-                    <TextBlock Text="Settings" FontSize="20" FontWeight="SemiBold"/>
-                    <TextBlock Text="Changes apply right away and are saved on this PC." FontSize="12" Foreground="{DynamicResource IslandMuted}"/>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="232"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+        <Border Background="{DynamicResource SettingsPanel}" BorderBrush="{DynamicResource SettingsLine}" BorderThickness="0,0,1,0">
+            <DockPanel Margin="12,22,12,18">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="10,0,0,26">
+                    <Image x:Name="HeaderMascot" Width="38" Height="38"/>
+                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="Kawaii Island" FontSize="15" FontWeight="SemiBold"/>
+                        <TextBlock Text="Settings" FontSize="12" Foreground="{DynamicResource IslandMuted}"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel x:Name="Nav">
+                    <RadioButton Style="{StaticResource NavItem}" Content="General" Tag="&#xE713;" x:Name="NavGeneral"/>
+                    <RadioButton Style="{StaticResource NavItem}" Content="Widgets" Tag="&#xE80A;" x:Name="NavWidgets"/>
+                    <RadioButton Style="{StaticResource NavItem}" Content="Position" Tag="&#xE7F4;" x:Name="NavPosition"/>
+                    <RadioButton Style="{StaticResource NavItem}" Content="Appearance" Tag="&#xE790;" x:Name="NavAppearance"/>
+                    <RadioButton Style="{StaticResource NavItem}" Content="Notifications" Tag="&#xEA8F;" x:Name="NavNotifications"/>
+                    <RadioButton Style="{StaticResource NavItem}" Content="Mail" Tag="&#xE715;" x:Name="NavMail"/>
+                    <RadioButton Style="{StaticResource NavItem}" Content="AI agents" Tag="&#xE943;" x:Name="NavAgents"/>
+                    <RadioButton Style="{StaticResource NavItem}" Content="About" Tag="&#xE946;" x:Name="NavAbout"/>
                 </StackPanel>
             </DockPanel>
+        </Border>
 
-            <TextBlock Style="{StaticResource Section}" Text="Size &amp; shape"/>
-            <Border Style="{StaticResource Card}"><StackPanel x:Name="SizePanel"/></Border>
+        <!-- Page -->
+        <ScrollViewer Grid.Column="1" x:Name="PageScroll" VerticalScrollBarVisibility="Auto" Focusable="False">
+            <StackPanel Margin="40,30,40,36" MaxWidth="760" HorizontalAlignment="Stretch">
+                <TextBlock x:Name="PageTitle" FontSize="28" FontWeight="SemiBold"/>
+                <TextBlock x:Name="PageCaption" Margin="0,6,0,8" FontSize="13" TextWrapping="Wrap" Foreground="{DynamicResource IslandMuted}"/>
 
-            <TextBlock Style="{StaticResource Section}" Text="Position"/>
-            <Border Style="{StaticResource Card}"><StackPanel x:Name="PositionPanel"/></Border>
-
-            <TextBlock Style="{StaticResource Section}" Text="Behavior"/>
-            <Border Style="{StaticResource Card}"><StackPanel x:Name="BehaviorPanel"/></Border>
-
-            <TextBlock Style="{StaticResource Section}" Text="Appearance"/>
-            <Border Style="{StaticResource Card}"><StackPanel x:Name="AppearancePanel"/></Border>
-
-            <TextBlock Style="{StaticResource Section}" Text="Notifications"/>
-            <Border Style="{StaticResource Card}"><StackPanel x:Name="NotifyPanel"/></Border>
-
-            <TextBlock Style="{StaticResource Section}" Text="Mail"/>
-            <Border Style="{StaticResource Card}"><StackPanel x:Name="MailSettingsPanel"/></Border>
-
-            <TextBlock Style="{StaticResource Section}" Text="Claude Code"/>
-            <Border Style="{StaticResource Card}"><StackPanel x:Name="CodePanel"/></Border>
-
-            <DockPanel Margin="2,18,0,0">
-                <Button x:Name="OpenFolder" DockPanel.Dock="Right" Content="Open folder" Padding="12,4" Click="OnOpenFolder"/>
-                <TextBlock x:Name="Footer" VerticalAlignment="Center" FontSize="11.5" TextWrapping="Wrap"
-                           Foreground="{DynamicResource IslandMuted}"/>
-            </DockPanel>
-        </StackPanel>
-    </ScrollViewer>
+                <StackPanel x:Name="PageGeneral">
+                    <Border Style="{StaticResource Card}" Margin="0,14,0,0"><StackPanel x:Name="BehaviorPanel"/></Border>
+                </StackPanel>
+                <StackPanel x:Name="PageWidgets">
+                    <TextBlock Style="{StaticResource Section}" Text="Resting island" Margin="2,14,0,10"/>
+                    <Border Style="{StaticResource Card}"><StackPanel x:Name="PillWidgetsPanel"/></Border>
+                    <TextBlock Style="{StaticResource Section}" Text="Open island"/>
+                    <Border Style="{StaticResource Card}"><StackPanel x:Name="HomeWidgetsPanel"/></Border>
+                    <TextBlock Style="{StaticResource Section}" Text="Live activities"/>
+                    <Border Style="{StaticResource Card}"><StackPanel x:Name="LivePanel"/></Border>
+                    <TextBlock Style="{StaticResource Section}" Text="Weather"/>
+                    <Border Style="{StaticResource Card}"><StackPanel x:Name="WeatherPanel"/></Border>
+                </StackPanel>
+                <StackPanel x:Name="PagePosition">
+                    <Border Style="{StaticResource Card}" Margin="0,14,0,0"><StackPanel x:Name="PositionPanel"/></Border>
+                </StackPanel>
+                <StackPanel x:Name="PageAppearance">
+                    <Border Style="{StaticResource Card}" Margin="0,14,0,0"><StackPanel x:Name="AppearancePanel"/></Border>
+                    <TextBlock Style="{StaticResource Section}" Text="Size &amp; shape"/>
+                    <Border Style="{StaticResource Card}"><StackPanel x:Name="SizePanel"/></Border>
+                </StackPanel>
+                <StackPanel x:Name="PageNotifications">
+                    <Border Style="{StaticResource Card}" Margin="0,14,0,0"><StackPanel x:Name="NotifyPanel"/></Border>
+                </StackPanel>
+                <StackPanel x:Name="PageMail">
+                    <Border Style="{StaticResource Card}" Margin="0,14,0,0"><StackPanel x:Name="MailSettingsPanel"/></Border>
+                </StackPanel>
+                <StackPanel x:Name="PageAgents">
+                    <Border Style="{StaticResource Card}" Margin="0,14,0,0"><StackPanel x:Name="CodePanel"/></Border>
+                </StackPanel>
+                <StackPanel x:Name="PageAbout">
+                    <Border Style="{StaticResource Card}" Margin="0,14,0,0">
+                        <StackPanel Margin="0,8">
+                            <TextBlock x:Name="AboutVersion" FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="Footer" Margin="0,6,0,12" FontSize="12.5" TextWrapping="Wrap" Foreground="{DynamicResource IslandMuted}"/>
+                            <Button x:Name="OpenFolder" Content="Open settings folder" Padding="14,6" HorizontalAlignment="Left" Click="OnOpenFolder"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </Window>

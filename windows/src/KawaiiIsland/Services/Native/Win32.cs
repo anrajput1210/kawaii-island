@@ -36,10 +36,19 @@ internal static partial class Win32
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)] public string szTypeName;
     }
 
-    private const uint SHGFI_ICON = 0x100, SHGFI_LARGEICON = 0x0;
+    private const uint SHGFI_ICON = 0x100, SHGFI_LARGEICON = 0x0, SHGFI_PIDL = 0x8;
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern nint SHGetFileInfo(string path, uint attributes, ref SHFILEINFO info, uint size, uint flags);
+
+    [DllImport("shell32.dll", EntryPoint = "SHGetFileInfoW")]
+    private static extern nint SHGetFileInfoPidl(nint pidl, uint attributes, ref SHFILEINFO info, uint size, uint flags);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern int SHParseDisplayName(string name, nint bindContext, out nint pidl, uint sfgaoIn, out uint sfgaoOut);
+
+    [DllImport("ole32.dll")]
+    private static extern void CoTaskMemFree(nint pv);
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -49,7 +58,15 @@ internal static partial class Win32
     public static System.Windows.Media.Imaging.BitmapSource? FileIcon(string path)
     {
         var info = new SHFILEINFO();
-        if (SHGetFileInfo(path, 0, ref info, (uint)Marshal.SizeOf<SHFILEINFO>(), SHGFI_ICON | SHGFI_LARGEICON) == 0 || info.hIcon == 0) return null;
+        uint size = (uint)Marshal.SizeOf<SHFILEINFO>();
+        if (path.StartsWith("shell:", StringComparison.OrdinalIgnoreCase)) // Start-menu / Store app: shell:AppsFolder\<AppID>
+        {
+            if (SHParseDisplayName(path, 0, out var pidl, 0, out _) != 0) return null;
+            try { if (SHGetFileInfoPidl(pidl, 0, ref info, size, SHGFI_PIDL | SHGFI_ICON | SHGFI_LARGEICON) == 0) return null; }
+            finally { CoTaskMemFree(pidl); }
+        }
+        else if (SHGetFileInfo(path, 0, ref info, size, SHGFI_ICON | SHGFI_LARGEICON) == 0) return null;
+        if (info.hIcon == 0) return null;
         try
         {
             var icon = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(info.hIcon, System.Windows.Int32Rect.Empty,
@@ -58,6 +75,55 @@ internal static partial class Win32
             return icon;
         }
         finally { DestroyIcon(info.hIcon); }
+    }
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool RegisterHotKey(nint hWnd, int id, uint modifiers, uint vk);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool UnregisterHotKey(nint hWnd, int id);
+
+    public const int WM_HOTKEY = 0x0312;
+    public const uint MOD_NOREPEAT = 0x4000;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct LASTINPUTINFO { public uint cbSize, dwTime; }
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetLastInputInfo(ref LASTINPUTINFO info);
+
+    /// <summary>Time since the last keyboard/mouse input anywhere in the session.</summary>
+    public static TimeSpan IdleTime()
+    {
+        var info = new LASTINPUTINFO { cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>() };
+        return GetLastInputInfo(ref info) ? TimeSpan.FromMilliseconds(unchecked((uint)Environment.TickCount - info.dwTime)) : TimeSpan.Zero;
+    }
+
+    [LibraryImport("dwmapi.dll")]
+    private static partial int DwmSetWindowAttribute(nint hwnd, int attribute, ref int value, int size);
+
+    /// <summary>Dark title bar to match the dark theme (Windows 10 20H1+ / 11; ignored elsewhere).</summary>
+    public static void UseDarkTitleBar(nint hwnd, bool dark)
+    {
+        int on = dark ? 1 : 0;
+        DwmSetWindowAttribute(hwnd, 20, ref on, sizeof(int)); // DWMWA_USE_IMMERSIVE_DARK_MODE
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SYSTEM_POWER_STATUS { public byte ACLineStatus, BatteryFlag, BatteryLifePercent, SystemStatusFlag; public int BatteryLifeTime, BatteryFullLifeTime; }
+
+    [LibraryImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetSystemPowerStatus(out SYSTEM_POWER_STATUS status);
+
+    /// <summary>Laptop battery: (percent, charging) or null on desktops / unknown.</summary>
+    public static (int Percent, bool Charging)? Battery()
+    {
+        if (!GetSystemPowerStatus(out var s) || s.BatteryLifePercent > 100 || (s.BatteryFlag & 128) != 0) return null; // 128 = no battery, 255 = unknown
+        return (s.BatteryLifePercent, s.ACLineStatus == 1);
     }
 
     /// <summary>Marks the window as a non-activating tool window.</summary>

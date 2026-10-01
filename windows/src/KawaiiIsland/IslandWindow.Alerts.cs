@@ -6,6 +6,8 @@ using KawaiiIsland.Services;
 using KawaiiIsland.Services.ClaudeCode;
 using KawaiiIsland.Services.Notifications;
 
+using Microsoft.Extensions.Logging;
+
 namespace KawaiiIsland;
 
 /// <summary>
@@ -15,7 +17,7 @@ namespace KawaiiIsland;
 /// </summary>
 public partial class IslandWindow
 {
-    private static readonly string[] AvatarColors = ["#7B6CF6", "#4DA3FF", "#30D158", "#FF9F0A", "#FF8FB1", "#BF7BFF"];
+    private static readonly string[] AvatarColors = ["#5E5CE6", "#0A84FF", "#30D158", "#FF9F0A", "#FF375F", "#BF5AF2"];
 
     private readonly NotificationFeed _feed;
     private readonly DispatcherTimer _flashTimer = new() { Interval = TimeSpan.FromSeconds(4) };
@@ -71,7 +73,7 @@ public partial class IslandWindow
         string? problem = await source.StartAsync();
         if (!ReferenceEquals(_notifications, source)) { source.Dispose(); return; } // turned off while starting
         NotificationProblem = problem;
-        if (problem is not null) StopNotifications();
+        if (problem is not null) { App.Log.LogWarning("Notifications: {Problem}", problem); StopNotifications(); }
     }
 
     private void StopNotifications()

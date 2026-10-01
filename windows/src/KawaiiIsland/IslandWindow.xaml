@@ -80,12 +80,14 @@
         <Style x:Key="Tab" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{DynamicResource IslandMuted}"/>
             <Setter Property="FontFamily" Value="{DynamicResource IslandFont}"/>
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontWeight" Value="Medium"/>
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="Bg" Background="Transparent" CornerRadius="99" Padding="9,3" Margin="0,0,2,0">
+                        <!-- No background shape: the selected tab is just bright, bold text -->
+                        <Border Background="Transparent" Padding="0,3" Margin="0,0,13,0">
                             <ContentPresenter/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -93,9 +95,8 @@
                                 <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource IslandTrack}"/>
                                 <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
-                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -121,7 +122,7 @@
             </TransformGroup>
         </Border.RenderTransform>
         <Border.Effect>
-            <DropShadowEffect x:Name="Shadow" BlurRadius="24" ShadowDepth="8" Direction="270" Opacity="0.45" Color="Black"/>
+            <DropShadowEffect x:Name="Shadow" BlurRadius="24" ShadowDepth="8" Direction="270" Opacity="0.4" Color="Black"/>
         </Border.Effect>
         <Grid ClipToBounds="True">
             <!-- Collapsed: mascot + clock -->
@@ -147,6 +148,28 @@
                         <Run x:Name="NotifLineBody" Foreground="{DynamicResource IslandMuted}"/>
                     </TextBlock>
                 </StackPanel>
+                <!-- Live alert (volume, charging, Bluetooth, Caps Lock): glyph + text or level bar + value, a few seconds -->
+                <DockPanel x:Name="HudPanel" Visibility="Collapsed" VerticalAlignment="Center" LastChildFill="True">
+                    <TextBlock x:Name="HudGlyph" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15" VerticalAlignment="Center" Margin="2,0,10,0"/>
+                    <TextBlock x:Name="HudValue" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="10,0,2,0"
+                               Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}" FontWeight="SemiBold" FontSize="12.5"/>
+                    <Grid VerticalAlignment="Center">
+                        <TextBlock x:Name="HudText" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource IslandText}"
+                                   FontFamily="{DynamicResource IslandFont}" FontWeight="Medium" FontSize="12.5"/>
+                        <Border x:Name="HudTrack" Height="5" CornerRadius="2.5" Background="{DynamicResource IslandTrack}" Visibility="Collapsed">
+                            <Border x:Name="HudFill" HorizontalAlignment="Left" CornerRadius="2.5" Width="0"/>
+                        </Border>
+                    </Grid>
+                </DockPanel>
+                <!-- Timer live activity (compact): orange ring + countdown -->
+                <StackPanel x:Name="TimerLinePanel" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                    <Grid Width="20" Height="20">
+                        <Ellipse Stroke="#4DFF9F0A" StrokeThickness="2.5"/>
+                        <Path x:Name="TimerArc" Stroke="#FF9F0A" StrokeThickness="2.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                    </Grid>
+                    <TextBlock x:Name="TimerLine" Margin="9,0,0,0" VerticalAlignment="Center" Foreground="#FF9F0A"
+                               FontFamily="{DynamicResource IslandFont}" FontWeight="SemiBold" FontSize="13.5"/>
+                </StackPanel>
                 <!-- Music (compact 280x40): album art + title, live equalizer on the right -->
                 <StackPanel x:Name="MusicLinePanel" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
                     <Border x:Name="MiniArt" Width="26" Height="26" CornerRadius="6"/>
@@ -155,15 +178,26 @@
                 </StackPanel>
                 <StackPanel x:Name="Eq" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Height="16" Visibility="Collapsed"/>
                 <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Widgets chosen for the resting pill (Settings → Widgets) -->
+                    <TextBlock x:Name="PillWeather" Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Collapsed"
+                               Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}" FontWeight="SemiBold" FontSize="12.5"/>
+                    <StackPanel x:Name="PillBattery" Orientation="Horizontal" Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Collapsed">
+                        <TextBlock x:Name="PillBatteryGlyph" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource IslandText}"/>
+                        <TextBlock x:Name="PillBatteryText" Margin="4,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource IslandText}"
+                                   FontFamily="{DynamicResource IslandFont}" FontWeight="SemiBold" FontSize="12.5"/>
+                    </StackPanel>
                     <!-- Unread mail badge (spec §3.1) -->
                     <StackPanel x:Name="MailBadge" Orientation="Horizontal" Margin="0,0,8,0" Visibility="Collapsed" VerticalAlignment="Center">
-                        <TextBlock Text="&#xE715;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" Foreground="#4DA3FF" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="MailBadgeCount" Margin="4,0,0,0" Foreground="#4DA3FF" FontFamily="{DynamicResource IslandFont}"
+                        <TextBlock Text="&#xE715;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" Foreground="#0A84FF" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="MailBadgeCount" Margin="4,0,0,0" Foreground="#0A84FF" FontFamily="{DynamicResource IslandFont}"
                                    FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
                     </StackPanel>
                     <TextBlock x:Name="Clock" VerticalAlignment="Center"
                                Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
                                FontWeight="SemiBold" FontSize="13"/>
+                    <!-- Privacy indicator (as on iPhone): orange = microphone in use, green = camera in use -->
+                    <Ellipse x:Name="PrivacyDot" Width="7" Height="7" Margin="8,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
                 </StackPanel>
             </Grid>
 
@@ -171,6 +205,17 @@
                  Modules (music, mail, alerts, apps) replace the greeting in Phases 7–10. -->
             <Grid x:Name="ExpandedPanel" Visibility="Collapsed" Opacity="0"
                   HorizontalAlignment="Center" VerticalAlignment="Top">
+                <!-- Volume / live alerts while the island is open: a compact chip over the top-right corner -->
+                <Border x:Name="ExpandedHud" Panel.ZIndex="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,16,0" Padding="10,4"
+                        CornerRadius="10" Background="{DynamicResource IslandBackground}" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="XHudGlyph" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center"/>
+                        <Border x:Name="XHudTrack" Width="90" Height="4" CornerRadius="2" Margin="9,0" VerticalAlignment="Center" Background="{DynamicResource IslandTrack}">
+                            <Border x:Name="XHudFill" HorizontalAlignment="Left" CornerRadius="2" Width="0"/>
+                        </Border>
+                        <TextBlock x:Name="XHudText" VerticalAlignment="Center" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}" FontSize="12" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Border>
                 <StackPanel x:Name="ExpandedItems" Margin="18,14,18,14">
                     <!-- Header for module views: tabs (when needed) + small clock + mascot -->
                     <DockPanel x:Name="TabRow" Margin="0,0,0,8" Visibility="Collapsed">
@@ -185,17 +230,22 @@
                             <RadioButton x:Name="TabAlerts" Content="Alerts" Style="{StaticResource Tab}" GroupName="view"/>
                             <RadioButton x:Name="TabMail" Content="Mail" Style="{StaticResource Tab}" GroupName="view"/>
                             <RadioButton x:Name="TabApps" Content="Apps" Style="{StaticResource Tab}" GroupName="view"/>
+                            <RadioButton x:Name="TabTimer" Content="Timer" Style="{StaticResource Tab}" GroupName="view"/>
+                            <RadioButton x:Name="TabCalendar" Content="Calendar" Style="{StaticResource Tab}" GroupName="view"/>
+                            <RadioButton x:Name="TabSystem" Content="System" Style="{StaticResource Tab}" GroupName="view"/>
                         </StackPanel>
                     </DockPanel>
                     <DockPanel x:Name="MainRow">
                         <c:MascotControl x:Name="MascotLarge" DockPanel.Dock="Right" Width="40" Height="40" VerticalAlignment="Top"/>
                         <Button x:Name="CodeToggle" DockPanel.Dock="Right" Style="{StaticResource Glyph}" Content="&#xE943;" FontSize="16"
                                 VerticalAlignment="Top" Margin="0,2,6,0" AutomationProperties.Name="Coding mode"/>
-                        <StackPanel x:Name="ClockBlock">
+                        <StackPanel x:Name="ClockBlock" DockPanel.Dock="Left" Margin="0,0,8,0">
                             <TextBlock x:Name="BigClock" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
                                        FontWeight="SemiBold" FontSize="34"/>
                             <TextBlock x:Name="DateText" Foreground="{DynamicResource IslandMuted}" FontFamily="{DynamicResource IslandFont}" FontSize="13"/>
                         </StackPanel>
+                        <!-- Home widgets (Settings → Widgets): weather, laptop battery, Bluetooth batteries; thin dividers, no pills -->
+                        <StackPanel x:Name="HomeWidgets" DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center"/>
                         <!-- Code mode header -->
                         <StackPanel x:Name="CodeHeader" Visibility="Collapsed">
                             <TextBlock x:Name="CodeTitle" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
@@ -254,6 +304,43 @@
                         </Grid>
                     </StackPanel>
 
+                    <!-- Calendar: date + month progress, then events (Google/Outlook) and your tasks, in time order -->
+                    <StackPanel x:Name="CalendarPanel" Visibility="Collapsed">
+                        <DockPanel>
+                            <TextBlock x:Name="MonthText" DockPanel.Dock="Right" VerticalAlignment="Bottom" Foreground="{DynamicResource IslandMuted}"
+                                       FontFamily="{DynamicResource IslandFont}" FontSize="11.5" FontWeight="Medium"/>
+                            <TextBlock x:Name="DayText" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}" FontSize="15" FontWeight="SemiBold"/>
+                        </DockPanel>
+                        <Border Height="3" CornerRadius="1.5" Margin="0,6,0,8" Background="{DynamicResource IslandTrack}">
+                            <Border x:Name="MonthFill" HorizontalAlignment="Left" CornerRadius="1.5" Background="{DynamicResource Accent}" Width="0"/>
+                        </Border>
+                        <StackPanel x:Name="AgendaList"/>
+                        <Button x:Name="AddTaskButton" Style="{StaticResource TextButton}" Content="+ Add task" HorizontalAlignment="Left" FontSize="12.5"/>
+                    </StackPanel>
+
+                    <!-- System: CPU / memory / disk / network, then Lock · Sleep · Restart · Shut down -->
+                    <StackPanel x:Name="SystemPanel" Visibility="Collapsed">
+                        <UniformGrid x:Name="SystemMeters" Columns="4"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button x:Name="LockButton" Style="{StaticResource TextButton}" Content="Lock" FontSize="12.5"/>
+                            <Button x:Name="SleepButton" Style="{StaticResource TextButton}" Content="Sleep" FontSize="12.5"/>
+                            <Button x:Name="RestartButton" Style="{StaticResource TextButton}" Content="Restart" FontSize="12.5"/>
+                            <Button x:Name="ShutDownButton" Style="{StaticResource TextButton}" Content="Shut down" FontSize="12.5"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Timer (expanded): big countdown, Pause/Resume and Cancel as plain text buttons -->
+                    <DockPanel x:Name="TimerPanel" Visibility="Collapsed" Margin="0,4,0,0">
+                        <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center">
+                            <Button x:Name="TimerPauseButton" Style="{StaticResource TextButton}" Foreground="#FF9F0A" FontSize="13.5"/>
+                            <Button x:Name="TimerCancelButton" Style="{StaticResource TextButton}" Content="Cancel" FontSize="13.5"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Timer" Foreground="{DynamicResource IslandMuted}" FontFamily="{DynamicResource IslandFont}" FontSize="12.5" FontWeight="Medium"/>
+                            <TextBlock x:Name="TimerBig" Foreground="#FF9F0A" FontFamily="{DynamicResource IslandFont}" FontSize="40" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </DockPanel>
+
                     <!-- App shortcuts (spec §3.4): pinned apps, + to add; drop files on the island to pin, drag a tile to reorder -->
                     <WrapPanel x:Name="AppsPanel" Margin="-2,10,0,0" Visibility="Collapsed"/>
 
@@ -299,6 +386,20 @@
                     </StackPanel>
                 </StackPanel>
             </Grid>
+        </Grid>
+    </Border>
+
+    <!-- Apple "minimal" state: with two live activities, the second sits in a detached circle beside the pill -->
+    <Border x:Name="Bubble" Width="36" Height="36" CornerRadius="18" Background="{DynamicResource IslandBackground}" BorderThickness="1"
+            Visibility="Collapsed" Opacity="0" IsHitTestVisible="False">
+        <Border.RenderTransform><TranslateTransform x:Name="BubbleShift"/></Border.RenderTransform>
+        <Grid>
+            <Grid x:Name="BubbleRing" Width="20" Height="20">
+                <Ellipse Stroke="#4DFF9F0A" StrokeThickness="2.5"/>
+                <Path x:Name="BubbleArc" Stroke="#FF9F0A" StrokeThickness="2.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+            </Grid>
+            <StackPanel x:Name="BubbleEq" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Height="14"/>
+            <Ellipse x:Name="BubbleDot" Width="9" Height="9"/>
         </Grid>
     </Border>
 

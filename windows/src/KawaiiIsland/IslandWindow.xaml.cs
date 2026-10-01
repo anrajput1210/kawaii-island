@@ -10,6 +10,7 @@ using Microsoft.Win32;
 using KawaiiIsland.Controls;
 using KawaiiIsland.Services;
 using KawaiiIsland.Services.Native;
+using Microsoft.Extensions.Logging;
 
 namespace KawaiiIsland;
 
@@ -24,7 +25,8 @@ public partial class IslandWindow : Window
         new PropertyMetadata(0.0, (d, e) =>
         {
             var w = (IslandWindow)d;
-            w.Pill.CornerRadius = new CornerRadius((double)e.NewValue);
+            double r = (double)e.NewValue;
+            w.Pill.CornerRadius = w.Notch ? new CornerRadius(0, 0, r, r) : new CornerRadius(r);
             w.SizeOutline();
         }));
 
@@ -44,6 +46,8 @@ public partial class IslandWindow : Window
     private bool _compact; // 280x40 "compact-active" size (spec §2) while something is going on
 
     private WindowConfig Win => _config.Current.Window;
+    /// <summary>Notch style (from the Python island's "Notch Nook"): flush with the top edge, square top corners.</summary>
+    private bool Notch => _config.Current.Appearance.Shape == "notch" && Anchor().V == VerticalAlignment.Top;
     private bool HasMascot => _config.Current.Appearance.Mascot != AppConfig.NoMascot;
     private MascotControl[] Mascots => [MascotSmall, MascotLarge, MascotTiny];
 
@@ -80,6 +84,8 @@ public partial class IslandWindow : Window
         _applyTimer.Tick += (_, _) => { _applyTimer.Stop(); ApplySettingsNow(); };
 
         _appBar.Docked += OnDocked;
+        // Hidden (Settings open, tray "hide"): give the reserved strip back; showing again re-reserves it.
+        IsVisibleChanged += (_, _) => { if (_hwnd == 0) return; if (IsVisible) PlaceIsland(); else _appBar.Undock(); };
         App.Cleanup += _appBar.Dispose; // crash or exit: never leave a reserved strip behind
         InitCodeMode();
         InitAutoHide();
@@ -88,6 +94,48 @@ public partial class IslandWindow : Window
         InitAlerts();
         InitMail();
         InitShortcuts();
+        InitWidgets();
+        InitLive();
+        InitCalendar();
+        _sleepTimer.Tick += (_, _) => UpdateSleepy();
+        _sleepTimer.Start();
+    }
+
+    // ---------------- global hotkey (spec §7) + sleepy mascot ----------------
+
+    private const int HotkeyId = 0x4B49; // "KI"
+    private readonly DispatcherTimer _sleepTimer = new() { Interval = TimeSpan.FromSeconds(20) };
+
+    /// <summary>(Re)registers Behavior.Hotkey. Returns why it couldn't (bad text, taken by another app) or null.</summary>
+    public string? HotkeyProblem { get; private set; }
+
+    public string? ApplyHotkey() => HotkeyProblem = RegisterHotkey();
+
+    private string? RegisterHotkey()
+    {
+        if (_hwnd == 0) return null;
+        Win32.UnregisterHotKey(_hwnd, HotkeyId);
+        string text = _config.Current.Behavior.Hotkey;
+        if (text.Length == 0) return null;
+        if (!HotkeyText.TryParse(text, out uint mods, out uint vk)) return $"\"{text}\" isn't a valid shortcut (e.g. Ctrl+Alt+I).";
+        return Win32.RegisterHotKey(_hwnd, HotkeyId, mods | Win32.MOD_NOREPEAT, vk) ? null : $"{text} is already used by another app.";
+    }
+
+    private nint OnWindowMessage(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
+    {
+        if (msg != Win32.WM_HOTKEY || wParam != HotkeyId) return 0;
+        handled = true;
+        if (!IsVisible) { ShowIsland(); SetExpanded(true); }
+        else ToggleExpanded();
+        return 0;
+    }
+
+    /// <summary>Away for 5+ minutes with nothing going on: the mascot dozes off (spec §8 "sleepy"); any input wakes it.</summary>
+    private void UpdateSleepy()
+    {
+        bool away = Win32.IdleTime() >= TimeSpan.FromMinutes(5);
+        if (away && _baseExpression == "idle") SetBaseExpression("sleepy");
+        else if (!away && _baseExpression == "sleepy") SetBaseExpression(IdleExpression);
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -95,6 +143,8 @@ public partial class IslandWindow : Window
         base.OnSourceInitialized(e);
         _hwnd = new WindowInteropHelper(this).Handle;
         Win32.MakeToolWindow(_hwnd); // no Alt+Tab, never steals focus
+        HwndSource.FromHwnd(_hwnd)?.AddHook(OnWindowMessage);
+        if (ApplyHotkey() is { } problem) App.Log.LogWarning("Hotkey: {Problem}", problem);
         PlaceIsland();
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
     }
@@ -102,11 +152,13 @@ public partial class IslandWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged; // static event: unsubscribe or leak
+        Win32.UnregisterHotKey(_hwnd, HotkeyId);
         _appBar.Dispose();
         StopCodeMode();
         _mediaService?.Dispose();
         StopNotifications();
         _mail?.Dispose();
+        StopLive();
         base.OnClosed(e);
     }
 
@@ -119,7 +171,7 @@ public partial class IslandWindow : Window
         Pill.Height = h;
         PillRadius = h / 2;
         ExpandedPanel.Width = Win.ExpandedWidth;
-        ExpandedPanel.Height = Win.ExpandedHeight;
+        ExpandedPanel.Height = double.NaN; // height follows content (see ExpandedHeightNow)
         Opacity = Win.Opacity;
         foreach (var m in Mascots) m.Skin = _config.Current.Appearance.Mascot;
         PeekMascot.Skin = _config.Current.Appearance.Mascot;
@@ -176,12 +228,13 @@ public partial class IslandWindow : Window
         var (h, v) = Anchor();
         Pill.HorizontalAlignment = Outline.HorizontalAlignment = h;
         Pill.VerticalAlignment = Outline.VerticalAlignment = v;
-        Pill.Margin = new Thickness(h == HorizontalAlignment.Left ? Gap : 0, v == VerticalAlignment.Top ? Gap : 0,
+        Pill.Margin = new Thickness(h == HorizontalAlignment.Left ? Gap : 0, v == VerticalAlignment.Top && !Notch ? Gap : 0,
                                     h == HorizontalAlignment.Right ? Gap : 0, v == VerticalAlignment.Bottom ? Gap : 0);
         Outline.Margin = new Thickness(Pill.Margin.Left - 5, Pill.Margin.Top - 5, Pill.Margin.Right - 5, Pill.Margin.Bottom - 5);
         Pill.RenderTransformOrigin = new Point(h == HorizontalAlignment.Left ? 0 : h == HorizontalAlignment.Right ? 1 : 0.5,
                                                v == VerticalAlignment.Top ? 0 : v == VerticalAlignment.Bottom ? 1 : 0.5);
         ExpandedPanel.VerticalAlignment = v == VerticalAlignment.Bottom ? VerticalAlignment.Bottom : VerticalAlignment.Top;
+        Pill.CornerRadius = Notch ? new CornerRadius(0, 0, PillRadius, PillRadius) : new CornerRadius(PillRadius);
         AnchorEdgeParts();
     }
 
@@ -345,7 +398,7 @@ public partial class IslandWindow : Window
         if (_expanded == expand) return;
         _expanded = expand;
 
-        if (expand) AnimatePill(Win.ExpandedWidth, Win.ExpandedHeight, Win.CornerRadius);
+        if (expand) AnimatePill(Win.ExpandedWidth, ExpandedHeightNow(), Win.CornerRadius);
         else { var (w, h) = CollapsedSize(); AnimatePill(w, h, h / 2); }
 
         if (expand)
@@ -408,13 +461,30 @@ public partial class IslandWindow : Window
         BeginAnimation(PillRadiusProperty, new DoubleAnimation(radius, d) { EasingFunction = ease });
     }
 
+    /// <summary>Design guidelines "dynamic height": the expanded island wraps its content (84 px minimum),
+    /// up to the Expanded height from Settings.</summary>
+    private double ExpandedHeightNow()
+    {
+        ExpandedItems.Measure(new Size(Win.ExpandedWidth, double.PositiveInfinity));
+        return Math.Clamp(Math.Ceiling(ExpandedItems.DesiredSize.Height), 84, Win.ExpandedHeight);
+    }
+
+    /// <summary>Content changed while open (new mail, tab switch…): grow or shrink to fit.</summary>
+    private void FitExpanded()
+    {
+        if (!_expanded) return;
+        double h = ExpandedHeightNow();
+        if (Math.Abs(Pill.Height - h) > 1) AnimatePill(Win.ExpandedWidth, h, Win.CornerRadius);
+    }
+
     private (double W, double H) CollapsedSize() => _compact ? (280, 40) : RestSize;
 
     /// <summary>Docked to the left/right edge: the resting island is a minimal 44 px circle (design guidelines'
     /// "minimal" state), so the reserved side strip is 56 px instead of the full pill width.</summary>
     private bool SideDocked => Win.AppBarEnabled && DockEdge is Edge.Left or Edge.Right;
 
-    private (double W, double H) RestSize => SideDocked ? (MinimalSize, MinimalSize) : (Win.CollapsedWidth, Win.CollapsedHeight);
+    private (double W, double H) RestSize => SideDocked ? (MinimalSize, MinimalSize)
+        : (Math.Max(120, Win.CollapsedWidth + PillWidgetWidth), Win.CollapsedHeight);
     private const double MinimalSize = 44;
 
     /// <summary>Switches the resting size between collapsed (180x36) and compact-active (280x40).</summary>
@@ -429,7 +499,8 @@ public partial class IslandWindow : Window
     {
         _autoCollapse.Stop();
         int seconds = _config.Current.Behavior.AutoCollapseSeconds;
-        if (!_expanded || seconds == 0 || Pill.IsMouseOver || _approval is not null) return;
+        if (seconds == 0) seconds = 4; // the island always closes by itself unless music is playing
+        if (!_expanded || Pill.IsMouseOver || _approval is not null || _media is { Playing: true }) return;
         _autoCollapse.Interval = TimeSpan.FromSeconds(seconds);
         _autoCollapse.Start();
     }
@@ -465,9 +536,9 @@ public partial class IslandWindow : Window
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
         HoverScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(over ? 1.04 : 1, d) { EasingFunction = ease });
         HoverScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(over ? 1.04 : 1, d) { EasingFunction = ease });
-        Shadow.BeginAnimation(DropShadowEffect.ColorProperty, new ColorAnimation(over ? GlowColor() : Colors.Black, d));
-        Shadow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, new DoubleAnimation(over ? 32 : 24, d));
-        Shadow.BeginAnimation(DropShadowEffect.OpacityProperty, new DoubleAnimation(over ? 0.6 : 0.45, d));
+        // Apple-style: a soft black shadow only, never a coloured glow.
+        Shadow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, new DoubleAnimation(over ? 28 : 24, d));
+        Shadow.BeginAnimation(DropShadowEffect.OpacityProperty, new DoubleAnimation(over ? 0.5 : 0.4, d));
 
         if (over)
         {
@@ -485,8 +556,7 @@ public partial class IslandWindow : Window
 
     private Color Accent()
     {
-        try { return (Color)ColorConverter.ConvertFromString(_config.Current.Appearance.Accent); }
-        catch (FormatException) { return Color.FromRgb(0xFF, 0x8F, 0xB1); }
+        return TryFindResource("Accent") is SolidColorBrush b ? b.Color : Color.FromRgb(0xFF, 0x8F, 0xB1); // "auto" = Windows accent
     }
 
     // ---------------- mascot reactions ----------------

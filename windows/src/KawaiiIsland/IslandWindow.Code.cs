@@ -7,6 +7,8 @@ using System.Windows.Threading;
 using KawaiiIsland.Controls;
 using KawaiiIsland.Services.ClaudeCode;
 
+using Microsoft.Extensions.Logging;
+
 namespace KawaiiIsland;
 
 /// <summary>
@@ -17,7 +19,7 @@ namespace KawaiiIsland;
 /// </summary>
 public partial class IslandWindow
 {
-    private static readonly Color Working = Color.FromRgb(0xD9, 0x77, 0x57), Waiting = Color.FromRgb(0xFF, 0xB3, 0x40),
+    private static readonly Color Working = Color.FromRgb(0xFF, 0x9F, 0x0A), Waiting = Color.FromRgb(0xFF, 0xD6, 0x0A), // Apple orange / yellow
                                   Finished = Color.FromRgb(0x30, 0xD1, 0x58), Quiet = Color.FromRgb(0x8E, 0x8E, 0x93);
 
     private readonly CodeTracker _tracker = new();
@@ -114,6 +116,9 @@ public partial class IslandWindow
             _tracker.OnStatus(e, DateTimeOffset.Now);
             return _tracker.StatusLine(e.TryGetProperty("session_id", out var id) ? id.GetString() ?? "" : "");
         });
+        server.Event += e => Dispatcher.BeginInvoke(() => _tracker.OnEvent(e, DateTimeOffset.Now));
+        server.Codex += e => Dispatcher.BeginInvoke(() => _tracker.OnCodex(e, DateTimeOffset.Now));
+        server.Ask = async e => await Dispatcher.InvokeAsync(() => AskApproval()).Task.Unwrap() ?? "";
         server.Permission = async e =>
         {
             var answer = await Dispatcher.InvokeAsync(() => AskApproval()).Task.Unwrap();
@@ -123,6 +128,7 @@ public partial class IslandWindow
         catch (SocketException ex)
         {
             server.Dispose();
+            App.Log.LogWarning(ex, "Code mode listener couldn't start on port {Port}", port);
             return $"Port {port} is already in use ({ex.SocketErrorCode}). Change modules.code.port in config.json.";
         }
         _server = server;
@@ -205,10 +211,10 @@ public partial class IslandWindow
         RenderExpanded();
         if (!on) return;
 
-        CodeTitle.Text = s is null ? "Locked in · Claude Code" : $"Claude Code · {s.Project}";
+        CodeTitle.Text = s is null ? "Locked in" : s.Project.Length > 0 ? $"{s.Agent} · {s.Project}" : s.Agent;
         CodeStateText.Text = s?.State switch
         {
-            null => "Waiting for a session (restart Claude Code after turning Code mode on)",
+            null => "Waiting for an agent. Connect Claude Code, Codex or others in Settings → AI agents.",
             CodeState.Thinking => "Thinking…",
             CodeState.Tool => "Running " + s.Detail,
             CodeState.NeedsYou => s.Detail.Length > 0 ? s.Detail : "Waiting for you",
@@ -258,13 +264,13 @@ public partial class IslandWindow
         return (value, fill, sub);
     }
 
-    private static void SetMeter((TextBlock Value, Border Fill, TextBlock Sub) m, double? pct, string sub)
+    private void SetMeter((TextBlock Value, Border Fill, TextBlock Sub) m, double? pct, string sub)
     {
         m.Value.Text = pct is { } p ? $"{p:0}%" : "—";
         m.Sub.Text = sub;
         double v = Math.Clamp(pct ?? 0, 0, 100);
         m.Fill.Tag = v;
-        m.Fill.Background = new SolidColorBrush(v >= 90 ? Color.FromRgb(0xFF, 0x45, 0x3A) : v >= 75 ? Waiting : Color.FromRgb(0xFF, 0x8F, 0xB1));
+        m.Fill.Background = new SolidColorBrush(v >= 90 ? Color.FromRgb(0xFF, 0x45, 0x3A) : v >= 75 ? Color.FromRgb(0xFF, 0x9F, 0x0A) : Accent());
         if (m.Fill.Parent is Border track) m.Fill.Width = track.ActualWidth * v / 100;
     }
 

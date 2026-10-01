@@ -14,6 +14,14 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks> <!-- required by [LibraryImport] source-generated P/Invoke -->
   </PropertyGroup>
 
+  <!-- OAuth app registrations for "Sign in with Google / Microsoft", baked in at build time by whoever ships the app
+       (env vars, never committed). Users never register anything. Empty = sign-in unavailable in that build. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="GoogleClientId" Value="$(KAWAII_GOOGLE_CLIENT_ID)" />
+    <AssemblyMetadata Include="GoogleClientSecret" Value="$(KAWAII_GOOGLE_CLIENT_SECRET)" />
+    <AssemblyMetadata Include="MicrosoftClientId" Value="$(KAWAII_MICROSOFT_CLIENT_ID)" />
+  </ItemGroup>
+
   <ItemGroup>
     <Resource Include="Assets\icon.ico" />
     <InternalsVisibleTo Include="KawaiiIsland.Tests" />
@@ -22,6 +30,7 @@
   <ItemGroup>
     <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
     <PackageReference Include="MailKit" Version="4.18.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.12" />
   </ItemGroup>
 

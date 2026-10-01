@@ -8,6 +8,7 @@ using Microsoft.Win32;
 using KawaiiIsland.Services;
 using KawaiiIsland.Services.ClaudeCode;
 using KawaiiIsland.Services.Native;
+using Microsoft.Extensions.Logging;
 
 namespace KawaiiIsland;
 
@@ -21,6 +22,8 @@ public partial class App : Application
     private SettingsWindow? _settings;
 
     public ConfigService Config { get; private set; } = null!;
+    /// <summary>File log in &lt;settings folder&gt;\logs (spec §7).</summary>
+    public static ILogger Log { get; private set; } = Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
     internal IslandWindow Island => _island!;
 
     /// <summary>Runs on normal exit AND on crash, so OS-level state (e.g. the AppBar reservation) is always released.</summary>
@@ -51,12 +54,18 @@ public partial class App : Application
             return;
         }
 
-        AppDomain.CurrentDomain.UnhandledException += (_, _) => RunCleanup();
+        // --data <folder>: run with a separate settings folder (demos, screenshots, portable use).
+        int data = Array.FindIndex(e.Args, a => a.Equals("--data", StringComparison.OrdinalIgnoreCase));
+        Config = new ConfigService(data >= 0 && data + 1 < e.Args.Length ? e.Args[data + 1] : null);
+        Log = FileLoggerProvider.Create(Path.Combine(Config.Directory, "logs"));
+        Log.LogInformation("Kawaii Island {Version} starting", typeof(App).Assembly.GetName().Version);
+
+        AppDomain.CurrentDomain.UnhandledException += (_, a) => { Log.LogCritical(a.ExceptionObject as Exception, "Unhandled exception"); RunCleanup(); };
         AppDomain.CurrentDomain.ProcessExit += (_, _) => RunCleanup();
-        DispatcherUnhandledException += (_, _) => RunCleanup();
+        DispatcherUnhandledException += (_, a) => { Log.LogCritical(a.Exception, "Unhandled UI exception"); RunCleanup(); };
 
         base.OnStartup(e);
-        Config = new ConfigService();
+        SyncStartWithWindows(explicitToggle: false);
         ApplyTheme();
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
         _island = new IslandWindow(Config);
@@ -64,6 +73,21 @@ public partial class App : Application
         _tray = BuildTray();
 
         ThreadPool.RegisterWaitForSingleObject(_wake, (_, _) => Dispatcher.BeginInvoke(ShowSettings), null, -1, false);
+    }
+
+    // ---------------- start with Windows ----------------
+
+    /// <summary>Keeps the Run entry in line with the setting. Dev builds only register on an explicit toggle.</summary>
+    internal void SyncStartWithWindows(bool explicitToggle)
+    {
+        string exe = Environment.ProcessPath ?? "";
+        bool on = Config.Current.Behavior.StartWithWindows;
+        if (on && !explicitToggle && StartupRegistration.IsDevBuild(exe)) return;
+        try { StartupRegistration.Apply(on, exe); }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException)
+        {
+            Log.LogWarning(ex, "Couldn't update the Run key");
+        }
     }
 
     // ---------------- theme ----------------
@@ -80,7 +104,7 @@ public partial class App : Application
         SetBrush("SettingsBackground", light ? "#FFFFFF" : "#1C1C21");
         SetBrush("SettingsPanel", light ? "#F5F2F7" : "#26262D");
         SetBrush("SettingsLine", light ? "#E5E1EA" : "#34343E");
-        SetBrush("Accent", a.Accent, fallback: "#FF8FB1");
+        SetBrush("Accent", a.Accent == "auto" ? WindowsAccent() : a.Accent, fallback: "#FF375F");
     }
 
     private void SetBrush(string key, string hex, string fallback = "#000000")
@@ -91,12 +115,19 @@ public partial class App : Application
         Resources[key] = new SolidColorBrush(color);
     }
 
+    /// <summary>Windows' accent colour (follows the wallpaper when "Automatic" is on in Personalization).</summary>
+    internal static string WindowsAccent() =>
+        Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM", "AccentColor", null) is int abgr
+            ? $"#{abgr & 0xFF:X2}{(abgr >> 8) & 0xFF:X2}{(abgr >> 16) & 0xFF:X2}"
+            : "#FF375F";
+
     private static bool WindowsUsesLightTheme() =>
         Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 0) is int v && v == 1;
 
     private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
     {
-        if (e.Category == UserPreferenceCategory.General && Config.Current.Appearance.Theme == "auto")
+        if (e.Category is UserPreferenceCategory.General or UserPreferenceCategory.Color or UserPreferenceCategory.VisualStyle
+            && (Config.Current.Appearance.Theme == "auto" || Config.Current.Appearance.Accent == "auto"))
             Dispatcher.BeginInvoke(ApplyTheme);
     }
 
@@ -146,7 +177,17 @@ public partial class App : Application
         menu.Items.Add(Choice("Mascot", mascots.Select(m => (MascotName(m), m)).ToArray(),
                               Config.Current.Appearance.Mascot, v => { Config.Current.Appearance.Mascot = v; SettingsChanged(); }));
         menu.Items.Add(Choice("Collapse after", CollapseChoices, island.AutoCollapseSeconds.ToString(), v => island.SetAutoCollapse(int.Parse(v))));
-        menu.Items.Add(Check("Code mode (Claude Code)", island.CodeMode, SetCodeMode));
+        menu.Items.Add(Check("Coding mode", island.CodeMode, SetCodeMode));
+        var timer = new MenuItem { Header = "Timer" };
+        foreach (int minutes in new[] { 1, 5, 10, 25, 50 })
+            timer.Items.Add(Item($"{minutes} min", () => island.StartTimer(minutes)));
+        if (island.TimerActive)
+        {
+            timer.Items.Add(new Separator());
+            timer.Items.Add(Item(island.TimerRunning ? "Pause" : "Resume", island.ToggleTimer));
+            timer.Items.Add(Item("Cancel", island.CancelTimer));
+        }
+        menu.Items.Add(timer);
         menu.Items.Add(Check("Do not disturb", island.Dnd, on => { island.SetDnd(on); _settings?.Reload(); }));
         menu.Items.Add(new Separator());
         menu.Items.Add(Item("Settings…", ShowSettings));
@@ -154,7 +195,7 @@ public partial class App : Application
     }
 
     internal static readonly (string Label, string Value)[] CollapseChoices =
-        [("4 seconds", "4"), ("10 seconds", "10"), ("15 seconds", "15"), ("30 seconds", "30"), ("Never", "0")];
+        [("4 seconds", "4"), ("10 seconds", "10"), ("15 seconds", "15"), ("30 seconds", "30")];
 
     /// <summary>Values stay Left/Center/Right; side docks just label them Top/Middle/Bottom.</summary>
     internal static (string Label, string Value)[] AlignmentChoices(bool vertical) => vertical
@@ -207,64 +248,84 @@ public partial class App : Application
         return parent;
     }
 
+    /// <summary>Opens Settings in front of everything and hides the island until Settings closes.</summary>
     internal void ShowSettings()
     {
-        if (_settings is { IsLoaded: true }) { _settings.Activate(); return; }
-        _settings = new SettingsWindow(this);
-        _settings.Closed += (_, _) => _settings = null;
-        _settings.Show();
+        if (_settings is not { IsLoaded: true })
+        {
+            bool islandWasVisible = _island!.IsVisible;
+            _island.Hide();
+            _settings = new SettingsWindow(this);
+            _settings.Closed += (_, _) =>
+            {
+                _settings = null;
+                if (islandWasVisible) _island.ShowIsland();
+            };
+            _settings.Show();
+        }
+        // Windows blocks focus-stealing from background processes (tray, second launch): briefly topmost wins.
+        if (_settings.WindowState == WindowState.Minimized) _settings.WindowState = WindowState.Normal;
+        _settings.Topmost = true;
         _settings.Activate();
+        _settings.Topmost = false;
     }
 
-    // ---------------- Code mode ----------------
+    // ---------------- coding mode + AI agents ----------------
 
-    /// <summary>
-    /// Turning Code mode on edits ~/.claude/settings.json, so it is always an explicit, confirmed user action.
-    /// Off removes exactly our entries again.
-    /// </summary>
+    /// <summary>Coding mode = the local listener (any agent can report to it) + lock-in look. Edits no one's config.</summary>
     internal void SetCodeMode(bool on)
     {
         var code = Config.Current.Modules.Code;
-        const string title = "Kawaii Island · Code mode";
-        if (on)
+        if (on && _island!.StartCodeMode() is { } error)
         {
-            bool first = !code.Consented;
-            var answer = !first ? MessageBoxResult.Yes : MessageBox.Show(
-                "Code mode shows your Claude Code sessions on the island: what Claude is doing, context used, " +
-                "and your 5-hour and weekly plan usage.\n\n" +
-                $"It adds Kawaii Island hooks (and a status line, if you don't already have one) to:\n{ClaudeSettings.SettingsPath}\n\n" +
-                "A backup is saved next to it. Nothing leaves this PC. Turning Code mode off removes them again.\n\nTurn on Code mode?",
-                title, MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (answer != MessageBoxResult.Yes) return;
+            MessageBox.Show(error, "Kawaii Island · Coding mode", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        if (!on) _island!.StopCodeMode();
+        code.Enabled = on;
+        Config.SaveSoon();
+        _settings?.Reload();
+    }
 
-            if (_island!.StartCodeMode() is { } error) { MessageBox.Show(error, title, MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-            try
+    /// <summary>
+    /// Connects Claude Code: adds our hooks (and a status line if there's none) to ~/.claude/settings.json. Explicit
+    /// and confirmed the first time; off removes exactly our entries. Turns coding mode on so events have a listener.
+    /// </summary>
+    internal void SetClaudeHooks(bool on)
+    {
+        var code = Config.Current.Modules.Code;
+        const string title = "Kawaii Island · Claude Code";
+        try
+        {
+            if (on)
             {
+                bool first = !code.Consented;
+                if (first && MessageBox.Show(
+                        "Kawaii Island will show your Claude Code sessions: what Claude is doing, context used, plan usage, " +
+                        "and Allow / Deny for permission prompts.\n\n" +
+                        $"It adds Kawaii Island hooks (and a status line, if you don't already have one) to:\n{ClaudeSettings.SettingsPath}\n\n" +
+                        "A backup is saved next to it. Nothing leaves this PC. Turning this off removes them again.\n\nConnect Claude Code?",
+                        title, MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
                 bool statusLine = ClaudeSettings.Apply(enable: true, code.Port);
-                code.Enabled = code.Consented = true;
-                Config.SaveSoon();
+                code.ClaudeHooks = code.Consented = true;
+                if (!_island!.CodeMode) SetCodeMode(true);
                 if (first) MessageBox.Show(
-                    "Code mode is on. Restart any open Claude Code sessions: hooks load when a session starts." +
+                    "Claude Code is connected. Restart any open Claude Code sessions: hooks load when a session starts." +
                     (statusLine ? "" : "\n\nYou already use a custom status line, so 5-hour/weekly usage can't be shown. Activity and context still work."),
                     title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
-            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+            else
             {
-                _island.StopCodeMode();
-                MessageBox.Show("Couldn't update Claude Code settings:\n" + ex.Message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+                ClaudeSettings.Apply(enable: false, code.Port);
+                code.ClaudeHooks = false;
             }
         }
-        else
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
         {
-            try { ClaudeSettings.Apply(enable: false, code.Port); }
-            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
-            {
-                MessageBox.Show("Couldn't remove the hooks from Claude Code settings:\n" + ex.Message, title, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            _island!.StopCodeMode();
-            code.Enabled = false;
-            Config.SaveSoon();
+            Log.LogWarning(ex, "Couldn't update Claude Code settings");
+            MessageBox.Show("Couldn't update Claude Code settings:\n" + ex.Message, title, MessageBoxButton.OK, MessageBoxImage.Error);
         }
+        Config.SaveSoon();
         _settings?.Reload();
     }
 

@@ -25,6 +25,15 @@ public static class ShortcutLauncher
         return PinResult.Added;
     }
 
+    /// <summary>Pins a Start-menu app (desktop or Store) chosen from the app list.</summary>
+    public static PinResult PinApp(List<ShortcutItem> items, InstalledApp app, int max)
+    {
+        if (items.Any(i => string.Equals(i.Path, app.Path, StringComparison.OrdinalIgnoreCase))) return PinResult.AlreadyPinned;
+        if (items.Count >= max) return PinResult.Full;
+        items.Add(new ShortcutItem { Label = app.Name, Path = app.Path });
+        return PinResult.Added;
+    }
+
     /// <summary>Drag-reorder: moves the item at <paramref name="from"/> into position <paramref name="to"/>.</summary>
     public static void Move(List<ShortcutItem> items, int from, int to)
     {
@@ -73,7 +82,7 @@ public static class ShortcutLauncher
                 bmp.Freeze();
                 icon = bmp;
             }
-            else if (Win32.FileIcon(path) is { } extracted)
+            else if (Win32.FileIcon(path.StartsWith("shell:", StringComparison.OrdinalIgnoreCase) ? path : Path.GetFullPath(path)) is { } extracted) // shell API wants backslashes
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(file)!);
                 var encoder = new PngBitmapEncoder();

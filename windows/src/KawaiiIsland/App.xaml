@@ -7,10 +7,14 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Assets/Mascots.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <!-- Design tokens (design/README.md). Dark theme; light theme swaps these in Phase 11. -->
+            <!-- Design tokens (design/README.md). Dark defaults; App.ApplyTheme() swaps them for light/auto at runtime. -->
             <SolidColorBrush x:Key="IslandBackground" Color="#000000"/>
             <SolidColorBrush x:Key="IslandText" Color="#FFFFFF"/>
             <SolidColorBrush x:Key="IslandMuted" Color="#8E8E93"/>
+            <SolidColorBrush x:Key="IslandTrack" Color="#3A3A3C"/>
+            <SolidColorBrush x:Key="SettingsBackground" Color="#1C1C21"/>
+            <SolidColorBrush x:Key="SettingsPanel" Color="#26262D"/>
+            <SolidColorBrush x:Key="SettingsLine" Color="#34343E"/>
             <SolidColorBrush x:Key="Accent" Color="#FF8FB1"/>
             <FontFamily x:Key="IslandFont">Segoe UI Variable Text, Segoe UI</FontFamily>
         </ResourceDictionary>

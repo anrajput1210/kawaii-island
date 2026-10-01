@@ -1,0 +1,139 @@
+<Window x:Class="KawaiiIsland.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Kawaii Island · Settings" Width="600" Height="780" MinWidth="480" MinHeight="420"
+        WindowStartupLocation="CenterScreen" Icon="pack://application:,,,/Assets/icon.ico"
+        Background="{DynamicResource SettingsBackground}" Foreground="{DynamicResource IslandText}"
+        FontFamily="{DynamicResource IslandFont}" FontSize="13" UseLayoutRounding="True">
+    <Window.Resources>
+        <Style x:Key="Section" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="2,22,0,8"/>
+        </Style>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource SettingsPanel}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SettingsLine}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="16,10,16,12"/>
+        </Style>
+
+        <!-- Toggle switch (keyboard: Tab to focus, Space to toggle) -->
+        <Style x:Key="Switch" TargetType="CheckBox">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <DockPanel Background="Transparent" Margin="0,6">
+                            <Grid DockPanel.Dock="Right" Width="38" Height="22" VerticalAlignment="Center">
+                                <Border x:Name="Track" CornerRadius="11" Background="{DynamicResource SettingsLine}"/>
+                                <Ellipse x:Name="Knob" Width="16" Height="16" Fill="White" HorizontalAlignment="Left" Margin="3,0"/>
+                                <Border x:Name="Focus" CornerRadius="14" Margin="-3" BorderThickness="2"
+                                        BorderBrush="{DynamicResource Accent}" Visibility="Collapsed"/>
+                            </Grid>
+                            <ContentPresenter VerticalAlignment="Center" Margin="0,0,16,0"/>
+                        </DockPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="{DynamicResource Accent}"/>
+                                <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Focus" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Segmented choice (arrow keys move within the group) -->
+        <Style x:Key="Seg" TargetType="RadioButton">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="{DynamicResource IslandText}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bg" CornerRadius="7" Padding="12,5" Background="Transparent" BorderThickness="1.5" BorderBrush="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource SettingsLine}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource Accent}"/>
+                                <Setter Property="Foreground" Value="#1C1C1E"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{DynamicResource IslandText}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Round picker for accent swatches and mascots -->
+        <Style x:Key="Pick" TargetType="RadioButton">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Ring" CornerRadius="30" Padding="3" BorderThickness="2" BorderBrush="Transparent" Background="Transparent">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Ring" Property="BorderBrush" Value="{DynamicResource SettingsLine}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Ring" Property="BorderBrush" Value="{DynamicResource IslandText}"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Ring" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+        <StackPanel Margin="24,18,24,24">
+            <DockPanel>
+                <Image x:Name="HeaderMascot" Width="44" Height="44"/>
+                <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="Settings" FontSize="20" FontWeight="SemiBold"/>
+                    <TextBlock Text="Changes apply right away and are saved on this PC." FontSize="12" Foreground="{DynamicResource IslandMuted}"/>
+                </StackPanel>
+            </DockPanel>
+
+            <TextBlock Style="{StaticResource Section}" Text="Size &amp; shape"/>
+            <Border Style="{StaticResource Card}"><StackPanel x:Name="SizePanel"/></Border>
+
+            <TextBlock Style="{StaticResource Section}" Text="Position"/>
+            <Border Style="{StaticResource Card}"><StackPanel x:Name="PositionPanel"/></Border>
+
+            <TextBlock Style="{StaticResource Section}" Text="Behavior"/>
+            <Border Style="{StaticResource Card}"><StackPanel x:Name="BehaviorPanel"/></Border>
+
+            <TextBlock Style="{StaticResource Section}" Text="Appearance"/>
+            <Border Style="{StaticResource Card}"><StackPanel x:Name="AppearancePanel"/></Border>
+
+            <TextBlock Style="{StaticResource Section}" Text="Claude Code"/>
+            <Border Style="{StaticResource Card}"><StackPanel x:Name="CodePanel"/></Border>
+
+            <DockPanel Margin="2,18,0,0">
+                <Button x:Name="OpenFolder" DockPanel.Dock="Right" Content="Open folder" Padding="12,4" Click="OnOpenFolder"/>
+                <TextBlock x:Name="Footer" VerticalAlignment="Center" FontSize="11.5" TextWrapping="Wrap"
+                           Foreground="{DynamicResource IslandMuted}"/>
+            </DockPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Window>

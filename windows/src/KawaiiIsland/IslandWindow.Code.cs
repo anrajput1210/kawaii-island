@@ -162,15 +162,15 @@ public partial class IslandWindow
 
     private (TextBlock, Border, TextBlock) Meter(string label)
     {
-        var title = Text(label, 11, (Brush)FindResource("IslandMuted"));
-        var value = Text("—", 11, (Brush)FindResource("IslandText"));
+        var title = Text(label, 11, "IslandMuted");
+        var value = Text("—", 11, "IslandText");
         value.HorizontalAlignment = HorizontalAlignment.Right;
         var head = new Grid(); head.Children.Add(title); head.Children.Add(value);
 
         var fill = new Border { CornerRadius = new CornerRadius(2), HorizontalAlignment = HorizontalAlignment.Left, Width = 0 };
-        var track = new Border { Height = 4, CornerRadius = new CornerRadius(2), Margin = new Thickness(0, 5, 0, 4),
-                                 Background = new SolidColorBrush(Color.FromArgb(0x40, 0xFF, 0xFF, 0xFF)), Child = fill };
-        var sub = Text("", 10, (Brush)FindResource("IslandMuted"));
+        var track = new Border { Height = 4, CornerRadius = new CornerRadius(2), Margin = new Thickness(0, 5, 0, 4), Child = fill };
+        track.SetResourceReference(Border.BackgroundProperty, "IslandTrack"); // follows dark/light theme
+        var sub = Text("", 10, "IslandMuted");
         sub.TextTrimming = TextTrimming.CharacterEllipsis;
 
         var panel = new StackPanel { Margin = new Thickness(0, 0, 14, 0) };
@@ -190,8 +190,11 @@ public partial class IslandWindow
         if (m.Fill.Parent is Border track) m.Fill.Width = track.ActualWidth * v / 100;
     }
 
-    private TextBlock Text(string text, double size, Brush brush) => new()
+    private static TextBlock Text(string text, double size, string brushKey)
     {
-        Text = text, FontSize = size, Foreground = brush, FontFamily = (FontFamily)FindResource("IslandFont"),
-    };
+        var t = new TextBlock { Text = text, FontSize = size };
+        t.SetResourceReference(TextBlock.ForegroundProperty, brushKey); // DynamicResource: re-themes live
+        t.SetResourceReference(TextBlock.FontFamilyProperty, "IslandFont");
+        return t;
+    }
 }

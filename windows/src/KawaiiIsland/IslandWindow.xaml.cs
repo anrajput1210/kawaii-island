@@ -36,6 +36,7 @@ public partial class IslandWindow : Window
     private readonly DispatcherTimer _autoCollapse = new();
     private readonly DispatcherTimer _moodTimer = new();
     private readonly ClickBurst _burst = new();
+    private readonly DispatcherTimer _applyTimer = new() { Interval = TimeSpan.FromMilliseconds(150) };
     private nint _hwnd;
     private bool _expanded;
     private string? _mood; // null = normal; "wow" (hover), "annoyed" (poked), "dizzy" (3 quick pokes)
@@ -63,7 +64,15 @@ public partial class IslandWindow : Window
         Pill.MouseLeftButtonDown += OnPillPressed;
         Pill.MouseLeftButtonUp += (_, _) => { if (Win.Locked) SetExpanded(!_expanded); };
         Pill.SizeChanged += (_, _) => SizeOutline();
+        Pill.MouseRightButtonUp += (_, e) =>
+        {
+            e.Handled = true;
+            var menu = ((App)Application.Current).IslandMenu();
+            menu.PlacementTarget = Pill;
+            menu.IsOpen = true;
+        };
         foreach (var m in Mascots) m.MouseLeftButtonUp += OnMascotPoked;
+        _applyTimer.Tick += (_, _) => { _applyTimer.Stop(); ApplySettingsNow(); };
 
         _appBar.Docked += OnDocked;
         App.Cleanup += _appBar.Dispose; // crash or exit: never leave a reserved strip behind
@@ -122,18 +131,20 @@ public partial class IslandWindow : Window
     private (HorizontalAlignment H, VerticalAlignment V) Anchor()
     {
         if (!Win.AppBarEnabled) return (HorizontalAlignment.Center, VerticalAlignment.Top);
+        // Alignment values are shared by all edges: Left≡Top (start), Right≡Bottom (end), anything else = centre.
         string a = Win.Alignment.ToLowerInvariant();
+        bool start = a is "left" or "top", end = a is "right" or "bottom";
         var h = DockEdge switch
         {
             Edge.Left => HorizontalAlignment.Left,
             Edge.Right => HorizontalAlignment.Right,
-            _ => a == "left" ? HorizontalAlignment.Left : a == "right" ? HorizontalAlignment.Right : HorizontalAlignment.Center,
+            _ => start ? HorizontalAlignment.Left : end ? HorizontalAlignment.Right : HorizontalAlignment.Center,
         };
         var v = DockEdge switch
         {
             Edge.Top => VerticalAlignment.Top,
             Edge.Bottom => VerticalAlignment.Bottom,
-            _ => a == "top" ? VerticalAlignment.Top : a == "bottom" ? VerticalAlignment.Bottom : VerticalAlignment.Center,
+            _ => start ? VerticalAlignment.Top : end ? VerticalAlignment.Bottom : VerticalAlignment.Center,
         };
         return (h, v);
     }
@@ -325,6 +336,32 @@ public partial class IslandWindow : Window
     }
 
     public void ToggleExpanded() => SetExpanded(!_expanded);
+    public bool IsExpanded => _expanded;
+
+    /// <summary>Settings changed: re-apply sizes/skin/anchor and re-dock, debounced 150 ms (spec §5) so slider drags stay smooth.</summary>
+    public void ApplySettingsSoon()
+    {
+        _applyTimer.Stop();
+        _applyTimer.Start();
+    }
+
+    private void ApplySettingsNow()
+    {
+        // Drop held animation values so the new sizes take effect, and settle in the resting state.
+        Pill.BeginAnimation(WidthProperty, null);
+        Pill.BeginAnimation(HeightProperty, null);
+        BeginAnimation(PillRadiusProperty, null);
+        CollapsedPanel.BeginAnimation(OpacityProperty, null);
+        ExpandedPanel.BeginAnimation(OpacityProperty, null);
+        _expanded = false;
+        ExpandedPanel.Visibility = Visibility.Collapsed;
+        CollapsedPanel.Opacity = 1;
+
+        ApplyConfig();
+        var (w, h) = CollapsedSize();
+        Pill.Width = w; Pill.Height = h; PillRadius = h / 2;
+        PlaceIsland();
+    }
 
     /// <summary>Width, height and corner radius move together with a spring (BackEase, 320 ms).</summary>
     private void AnimatePill(double width, double height, double radius)

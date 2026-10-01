@@ -98,6 +98,7 @@ public partial class IslandWindow
         CodeHeader.Visibility = CodeMeters.Visibility = CodeFooter.Visibility = Vis(_view == View.Code);
         MusicPanel.Visibility = Vis(_view == View.Music);
         AlertsPanel.Visibility = Vis(_view == View.Alerts);
+        FitExpanded();
     }
 
     private static Visibility Vis(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;

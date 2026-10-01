@@ -7,6 +7,8 @@ using KawaiiIsland.Services;
 using KawaiiIsland.Services.Mail;
 using KawaiiIsland.Services.Notifications;
 
+using Microsoft.Extensions.Logging;
+
 namespace KawaiiIsland;
 
 /// <summary>
@@ -61,7 +63,7 @@ public partial class IslandWindow
         string? problem = await provider.StartAsync();
         if (!ReferenceEquals(_mail, provider)) { provider.Dispose(); return; } // restarted while connecting
         MailProblem = problem;
-        if (problem is not null) StopMail();
+        if (problem is not null) { App.Log.LogWarning("Mail: {Problem}", problem); StopMail(); }
         ((App)Application.Current).RefreshSettings();
     }
 

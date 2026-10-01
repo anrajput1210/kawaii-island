@@ -69,6 +69,23 @@ public partial class SettingsWindow : Window
         BehaviorPanel.Children.Clear();
         Field(BehaviorPanel, "Collapse after", Segments(App.CollapseChoices, Island.AutoCollapseSeconds.ToString(),
                v => Island.SetAutoCollapse(int.Parse(v))));
+        Switch(BehaviorPanel, "Start with Windows", "Opens the island when you sign in.",
+               C.Behavior.StartWithWindows, on => { C.Behavior.StartWithWindows = on; _app.Config.SaveSoon(); _app.SyncStartWithWindows(explicitToggle: true); });
+        var hotkey = new TextBox { Text = C.Behavior.Hotkey, Padding = new Thickness(6, 4, 6, 4), Width = 160, HorizontalAlignment = HorizontalAlignment.Left,
+                                   ToolTip = "e.g. Ctrl+Alt+I. Leave empty for none. Press Enter to apply." };
+        StyleBox(hotkey);
+        AutomationProperties.SetName(hotkey, "Keyboard shortcut");
+        var hotkeyNote = Label(Island.HotkeyProblem ?? "Opens and closes the island from anywhere.", 11.5, "IslandMuted");
+        void ApplyHotkey()
+        {
+            C.Behavior.Hotkey = hotkey.Text.Trim();
+            _app.Config.SaveSoon();
+            hotkeyNote.Text = Island.ApplyHotkey() ?? "Opens and closes the island from anywhere.";
+        }
+        hotkey.KeyDown += (_, e) => { if (e.Key == Key.Enter) ApplyHotkey(); };
+        hotkey.LostFocus += (_, _) => { if (hotkey.Text.Trim() != C.Behavior.Hotkey) ApplyHotkey(); };
+        var hotkeyRow = new StackPanel { Children = { hotkey, hotkeyNote } };
+        Field(BehaviorPanel, "Keyboard shortcut", hotkeyRow);
         Switch(BehaviorPanel, "App shortcuts", "Your pinned apps on the island. Add with + or drop files on the island; right-click an app to rename or remove it.",
                C.Modules.Shortcuts.Enabled, Island.SetShortcutsEnabled);
         Field(BehaviorPanel, "Max pinned apps", Segments([("4", "4"), ("6", "6"), ("8", "8"), ("12", "12")], C.Modules.Shortcuts.Max.ToString(),

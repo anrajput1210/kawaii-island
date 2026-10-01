@@ -7,6 +7,8 @@ using System.Windows.Threading;
 using KawaiiIsland.Controls;
 using KawaiiIsland.Services.ClaudeCode;
 
+using Microsoft.Extensions.Logging;
+
 namespace KawaiiIsland;
 
 /// <summary>
@@ -123,6 +125,7 @@ public partial class IslandWindow
         catch (SocketException ex)
         {
             server.Dispose();
+            App.Log.LogWarning(ex, "Code mode listener couldn't start on port {Port}", port);
             return $"Port {port} is already in use ({ex.SocketErrorCode}). Change modules.code.port in config.json.";
         }
         _server = server;

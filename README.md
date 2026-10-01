@@ -4,17 +4,26 @@ A cute, customizable **Dynamic Island for Windows 11** (macOS version in progres
 
 <p align="center"><img src="design/mascot/icon.png" width="96" alt="Kiko, the default mascot"></p>
 
+<p align="center">
+  <img src="docs/screenshots/collapsed.png" alt="Collapsed island: mascot, unread mail badge and clock"><br><br>
+  <img src="docs/screenshots/home-apps.png" width="520" alt="Expanded island: clock, date and pinned apps"><br><br>
+  <img src="docs/screenshots/mail.png" width="520" alt="Expanded island: Mail tab with unread senders">
+</p>
+
 **It never covers your browser tabs.** The island reserves its own strip of screen as a Desktop AppBar, so maximized windows stop below it instead of sliding underneath.
 
-> **Status: early development.** Phases 1–8 (skeleton, animations, drag & snap, AppBar, settings, auto-hide, music, notifications) and Code mode are done. See [Roadmap](#roadmap). Try the design in your browser: open [`design/mockup/index.html`](design/mockup/index.html).
+> **Status: v0.1 feature-complete on Windows.** All 11 build phases (skeleton → polish), Code mode with on-island approvals, mail and app shortcuts are done; the macOS app and installers are next. See [Roadmap](#roadmap). Try the design in your browser: open [`design/mockup/index.html`](design/mockup/index.html).
 
-## Features (planned for v0.1)
+## Features
 
 - **AppBar workspace reservation** (top/bottom/left/right): windows stop below the island. The reservation is released cleanly on exit or crash.
 - **Music from any player** via Windows media controls (SMTC): Spotify, Apple Music, browser tabs, VLC… with no login. The accent color comes from the album art.
 - **Notifications mirroring** (toasts), **mail** headers over IMAP (unread count and latest 5; bodies are never downloaded), **app shortcuts** (drop a file on the island to pin it).
 - **5 mascots** (Kiko, Miso the cat, Bun the bunny, Bolt the robot, Ribbit the frog). They blink, peek out to say hi when the island is hidden, squish when clicked, and get dizzy if you click three times fast.
-- Drag to move, edge snapping, auto-hide in fullscreen, dark/light themes, Ctrl+Alt+I hotkey, tray icon.
+- Drag to move, edge snapping, auto-hide in fullscreen, dark/light themes, tray icon.
+- **Ctrl+Alt+I** opens and closes the island from anywhere (change it in Settings → Behavior). **Start with Windows** is on by default for installed builds.
+- **Coding mode** (`</>` button on the island): the mascot puts on a hoodie and glasses, a lock-in timer runs, and alerts stop popping the island open.
+- Follows the [design guidelines](#design-guidelines): glanceable, quiet by default, message text hidden until you allow previews, height that fits its content, honours Windows "Animation effects".
 - **Code mode (Claude Code companion):** live status of your Claude Code sessions (thinking, which tool is running, needs your permission, done), plus context used, 5-hour and weekly plan usage with reset times, and session cost. See below.
 
 ## Code mode (Claude Code)
@@ -46,6 +55,14 @@ dotnet test
 dotnet run --project src/KawaiiIsland
 ```
 
+`--data <folder>` runs with a separate settings folder (handy for demos; the screenshots above use mock mail and notifications). Development builds never register themselves to start with Windows unless you turn it on in Settings.
+
+**Logs:** `%LOCALAPPDATA%\KawaiiIsland\logs\yyyy-MM-dd.log` (last 7 days). They contain app events and errors only, never message contents or passwords.
+
+## Design guidelines
+
+The island follows Apple's Live Activities guidelines adapted to Windows: one glanceable thing at a time; compact, minimal (44 px circle on side docks) and expanded states; a thin key line tinted by the active content; medium-weight type; animations under a second that switch off with Windows "Animation effects"; sensitive text hidden by default; activities end promptly and every source can be turned off.
+
 ## Repository layout
 
 | Path | What |
@@ -71,7 +88,7 @@ Mascot art has a single source: `design/mascot/mascot.js`. Regenerate the SVGs a
 - [x] 8 · Notifications mirroring
 - [x] 9 · Mail (demo inbox + IMAP with IDLE, DPAPI password)
 - [x] 10 · Shortcuts (pinned apps, file-drop box, reorder, run as admin)
-- [ ] 11 · Polish, themes, start with Windows, logging
+- [x] 11 · Polish: start with Windows, Ctrl+Alt+I hotkey, file logging, sleepy mascot, dynamic height, screenshots
 - [ ] Installers: Windows setup `.exe` and macOS `.dmg` (built in GitHub Actions)
 
 ## Mail

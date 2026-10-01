@@ -8,6 +8,7 @@ using Microsoft.Win32;
 using KawaiiIsland.Services;
 using KawaiiIsland.Services.ClaudeCode;
 using KawaiiIsland.Services.Native;
+using Microsoft.Extensions.Logging;
 
 namespace KawaiiIsland;
 
@@ -21,6 +22,8 @@ public partial class App : Application
     private SettingsWindow? _settings;
 
     public ConfigService Config { get; private set; } = null!;
+    /// <summary>File log in &lt;settings folder&gt;\logs (spec §7).</summary>
+    public static ILogger Log { get; private set; } = Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
     internal IslandWindow Island => _island!;
 
     /// <summary>Runs on normal exit AND on crash, so OS-level state (e.g. the AppBar reservation) is always released.</summary>
@@ -51,12 +54,18 @@ public partial class App : Application
             return;
         }
 
-        AppDomain.CurrentDomain.UnhandledException += (_, _) => RunCleanup();
+        // --data <folder>: run with a separate settings folder (demos, screenshots, portable use).
+        int data = Array.FindIndex(e.Args, a => a.Equals("--data", StringComparison.OrdinalIgnoreCase));
+        Config = new ConfigService(data >= 0 && data + 1 < e.Args.Length ? e.Args[data + 1] : null);
+        Log = FileLoggerProvider.Create(Path.Combine(Config.Directory, "logs"));
+        Log.LogInformation("Kawaii Island {Version} starting", typeof(App).Assembly.GetName().Version);
+
+        AppDomain.CurrentDomain.UnhandledException += (_, a) => { Log.LogCritical(a.ExceptionObject as Exception, "Unhandled exception"); RunCleanup(); };
         AppDomain.CurrentDomain.ProcessExit += (_, _) => RunCleanup();
-        DispatcherUnhandledException += (_, _) => RunCleanup();
+        DispatcherUnhandledException += (_, a) => { Log.LogCritical(a.Exception, "Unhandled UI exception"); RunCleanup(); };
 
         base.OnStartup(e);
-        Config = new ConfigService();
+        SyncStartWithWindows(explicitToggle: false);
         ApplyTheme();
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
         _island = new IslandWindow(Config);
@@ -64,6 +73,21 @@ public partial class App : Application
         _tray = BuildTray();
 
         ThreadPool.RegisterWaitForSingleObject(_wake, (_, _) => Dispatcher.BeginInvoke(ShowSettings), null, -1, false);
+    }
+
+    // ---------------- start with Windows ----------------
+
+    /// <summary>Keeps the Run entry in line with the setting. Dev builds only register on an explicit toggle.</summary>
+    internal void SyncStartWithWindows(bool explicitToggle)
+    {
+        string exe = Environment.ProcessPath ?? "";
+        bool on = Config.Current.Behavior.StartWithWindows;
+        if (on && !explicitToggle && StartupRegistration.IsDevBuild(exe)) return;
+        try { StartupRegistration.Apply(on, exe); }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException)
+        {
+            Log.LogWarning(ex, "Couldn't update the Run key");
+        }
     }
 
     // ---------------- theme ----------------

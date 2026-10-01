@@ -6,6 +6,8 @@ using KawaiiIsland.Services;
 using KawaiiIsland.Services.ClaudeCode;
 using KawaiiIsland.Services.Notifications;
 
+using Microsoft.Extensions.Logging;
+
 namespace KawaiiIsland;
 
 /// <summary>
@@ -71,7 +73,7 @@ public partial class IslandWindow
         string? problem = await source.StartAsync();
         if (!ReferenceEquals(_notifications, source)) { source.Dispose(); return; } // turned off while starting
         NotificationProblem = problem;
-        if (problem is not null) StopNotifications();
+        if (problem is not null) { App.Log.LogWarning("Notifications: {Problem}", problem); StopNotifications(); }
     }
 
     private void StopNotifications()

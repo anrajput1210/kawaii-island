@@ -10,6 +10,7 @@ using Microsoft.Win32;
 using KawaiiIsland.Controls;
 using KawaiiIsland.Services;
 using KawaiiIsland.Services.Native;
+using Microsoft.Extensions.Logging;
 
 namespace KawaiiIsland;
 
@@ -88,6 +89,45 @@ public partial class IslandWindow : Window
         InitAlerts();
         InitMail();
         InitShortcuts();
+        _sleepTimer.Tick += (_, _) => UpdateSleepy();
+        _sleepTimer.Start();
+    }
+
+    // ---------------- global hotkey (spec §7) + sleepy mascot ----------------
+
+    private const int HotkeyId = 0x4B49; // "KI"
+    private readonly DispatcherTimer _sleepTimer = new() { Interval = TimeSpan.FromSeconds(20) };
+
+    /// <summary>(Re)registers Behavior.Hotkey. Returns why it couldn't (bad text, taken by another app) or null.</summary>
+    public string? HotkeyProblem { get; private set; }
+
+    public string? ApplyHotkey() => HotkeyProblem = RegisterHotkey();
+
+    private string? RegisterHotkey()
+    {
+        if (_hwnd == 0) return null;
+        Win32.UnregisterHotKey(_hwnd, HotkeyId);
+        string text = _config.Current.Behavior.Hotkey;
+        if (text.Length == 0) return null;
+        if (!HotkeyText.TryParse(text, out uint mods, out uint vk)) return $"\"{text}\" isn't a valid shortcut (e.g. Ctrl+Alt+I).";
+        return Win32.RegisterHotKey(_hwnd, HotkeyId, mods | Win32.MOD_NOREPEAT, vk) ? null : $"{text} is already used by another app.";
+    }
+
+    private nint OnWindowMessage(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
+    {
+        if (msg != Win32.WM_HOTKEY || wParam != HotkeyId) return 0;
+        handled = true;
+        if (!IsVisible) { ShowIsland(); SetExpanded(true); }
+        else ToggleExpanded();
+        return 0;
+    }
+
+    /// <summary>Away for 5+ minutes with nothing going on: the mascot dozes off (spec §8 "sleepy"); any input wakes it.</summary>
+    private void UpdateSleepy()
+    {
+        bool away = Win32.IdleTime() >= TimeSpan.FromMinutes(5);
+        if (away && _baseExpression == "idle") SetBaseExpression("sleepy");
+        else if (!away && _baseExpression == "sleepy") SetBaseExpression(IdleExpression);
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -95,6 +135,8 @@ public partial class IslandWindow : Window
         base.OnSourceInitialized(e);
         _hwnd = new WindowInteropHelper(this).Handle;
         Win32.MakeToolWindow(_hwnd); // no Alt+Tab, never steals focus
+        HwndSource.FromHwnd(_hwnd)?.AddHook(OnWindowMessage);
+        if (ApplyHotkey() is { } problem) App.Log.LogWarning("Hotkey: {Problem}", problem);
         PlaceIsland();
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
     }
@@ -102,6 +144,7 @@ public partial class IslandWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged; // static event: unsubscribe or leak
+        Win32.UnregisterHotKey(_hwnd, HotkeyId);
         _appBar.Dispose();
         StopCodeMode();
         _mediaService?.Dispose();
@@ -119,7 +162,7 @@ public partial class IslandWindow : Window
         Pill.Height = h;
         PillRadius = h / 2;
         ExpandedPanel.Width = Win.ExpandedWidth;
-        ExpandedPanel.Height = Win.ExpandedHeight;
+        ExpandedPanel.Height = double.NaN; // height follows content (see ExpandedHeightNow)
         Opacity = Win.Opacity;
         foreach (var m in Mascots) m.Skin = _config.Current.Appearance.Mascot;
         PeekMascot.Skin = _config.Current.Appearance.Mascot;
@@ -345,7 +388,7 @@ public partial class IslandWindow : Window
         if (_expanded == expand) return;
         _expanded = expand;
 
-        if (expand) AnimatePill(Win.ExpandedWidth, Win.ExpandedHeight, Win.CornerRadius);
+        if (expand) AnimatePill(Win.ExpandedWidth, ExpandedHeightNow(), Win.CornerRadius);
         else { var (w, h) = CollapsedSize(); AnimatePill(w, h, h / 2); }
 
         if (expand)
@@ -406,6 +449,22 @@ public partial class IslandWindow : Window
         Pill.BeginAnimation(WidthProperty, new DoubleAnimation(width, d) { EasingFunction = ease });
         Pill.BeginAnimation(HeightProperty, new DoubleAnimation(height, d) { EasingFunction = ease });
         BeginAnimation(PillRadiusProperty, new DoubleAnimation(radius, d) { EasingFunction = ease });
+    }
+
+    /// <summary>Design guidelines "dynamic height": the expanded island wraps its content (84 px minimum),
+    /// up to the Expanded height from Settings.</summary>
+    private double ExpandedHeightNow()
+    {
+        ExpandedItems.Measure(new Size(Win.ExpandedWidth, double.PositiveInfinity));
+        return Math.Clamp(Math.Ceiling(ExpandedItems.DesiredSize.Height), 84, Win.ExpandedHeight);
+    }
+
+    /// <summary>Content changed while open (new mail, tab switch…): grow or shrink to fit.</summary>
+    private void FitExpanded()
+    {
+        if (!_expanded) return;
+        double h = ExpandedHeightNow();
+        if (Math.Abs(Pill.Height - h) > 1) AnimatePill(Win.ExpandedWidth, h, Win.CornerRadius);
     }
 
     private (double W, double H) CollapsedSize() => _compact ? (280, 40) : RestSize;

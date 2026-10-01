@@ -73,7 +73,7 @@ public static class ShortcutLauncher
                 bmp.Freeze();
                 icon = bmp;
             }
-            else if (Win32.FileIcon(path) is { } extracted)
+            else if (Win32.FileIcon(Path.GetFullPath(path)) is { } extracted) // shell API wants backslashes
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(file)!);
                 var encoder = new PngBitmapEncoder();

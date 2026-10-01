@@ -229,4 +229,6 @@ public sealed class BehaviorConfig
 {
     public int AutoCollapseSeconds { get; set; } = 4;
     public bool StartWithWindows { get; set; } = true;
+    /// <summary>Global shortcut that opens/closes the island; "" = none.</summary>
+    public string Hotkey { get; set; } = "Ctrl+Alt+I";
 }

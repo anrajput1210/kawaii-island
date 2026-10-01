@@ -15,7 +15,7 @@
   },
   "appearance": { "theme": "dark", "accent": "#FF8FB1", "mascot": "kiko" },
   "modules": {
-    "mail": { "enabled": true, "provider": "mock", "server": "imap.example.com", "port": 993, "ssl": true, "username": "you@example.com", "pollSeconds": 60 },
+    "mail": { "enabled": true, "provider": "mock", "server": "imap.example.com", "port": 993, "ssl": true, "username": "you@example.com", "pollSeconds": 60, "openUrl": "" },
     "notifications": { "enabled": true, "muted": [], "dnd": false },
     "music": { "enabled": true },
     "shortcuts": { "enabled": true, "max": 8, "items": [ { "label": "Notepad", "path": "C:\\Windows\\notepad.exe", "args": "" } ] }

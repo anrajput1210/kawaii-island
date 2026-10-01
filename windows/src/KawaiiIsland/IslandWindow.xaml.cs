@@ -85,6 +85,7 @@ public partial class IslandWindow : Window
         InitMusic();
         InitViews();
         InitAlerts();
+        InitMail();
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -103,6 +104,7 @@ public partial class IslandWindow : Window
         StopCodeMode();
         _mediaService?.Dispose();
         StopNotifications();
+        _mail?.Dispose();
         base.OnClosed(e);
     }
 

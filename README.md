@@ -21,7 +21,8 @@ A cute, customizable **Dynamic Island for Windows 11** (macOS version in progres
 
 Turn it on from the tray: **Code mode (Claude Code)**. After you confirm, Kawaii Island adds a few entries to `~/.claude/settings.json` (a backup is saved as `settings.json.kawaii-backup`):
 
-- **Hooks** for session, prompt, tool, permission, notification and stop events. Each one is an `async` `curl` call to `http://127.0.0.1:47811/kawaii/hook`, so Claude Code never waits on them. There's no helper program that could go missing, and if the island isn't running the call just fails quietly.
+- **Hooks** for session, prompt, tool, notification and stop events. Each one is an `async` `curl` call to `http://127.0.0.1:47811/kawaii/hook`, so Claude Code never waits on them.
+- **A permission hook** (synchronous) so you can answer **Allow / Deny** on the island. It waits up to 2 minutes, then hands the question back to the terminal; if the island isn't running it falls back immediately. Turn it off in Settings → Claude Code → *Approve from the island*. There's no helper program that could go missing, and if the island isn't running the call just fails quietly.
 - **A status line**, but only if you don't already have one. It sends usage to the island and shows `🏝 ctx 23% · 5h 41% · wk 12%` in Claude Code. Plan usage (5-hour and weekly) comes from Claude Code's status line data, which is only available on Pro and Max plans.
 
 Turning Code mode off, or uninstalling the app (`KawaiiIsland.exe --uninstall-hooks`), removes exactly those entries and nothing else. Restart open Claude Code sessions after you toggle it, because hooks load when a session starts. The listener only accepts connections from this PC, and session data is kept in memory only.
@@ -68,10 +69,14 @@ Mascot art has a single source: `design/mascot/mascot.js`. Regenerate the SVGs a
 - [x] 6 · Auto-hide in fullscreen and the mascot peek
 - [x] 7 · Music (SMTC)
 - [x] 8 · Notifications mirroring
-- [ ] 9 · Mail (mock, then IMAP)
+- [x] 9 · Mail (demo inbox + IMAP with IDLE, DPAPI password)
 - [ ] 10 · App shortcuts and file drop
 - [ ] 11 · Polish, themes, start with Windows, logging
 - [ ] Installers: Windows setup `.exe` and macOS `.dmg` (built in GitHub Actions)
+
+## Mail
+
+Settings → Mail. The **Demo inbox** (default) shows sample messages so you can see how it looks. Pick **IMAP** and enter your server, username and an **app password** (Gmail and Outlook require one; OAuth isn't supported yet). Kawaii Island opens INBOX read-only, reads unread **headers only**, and waits for new mail with IMAP IDLE (or polls every `pollSeconds`). New mail updates the badge and makes the mascot hop; it never pops the island open. Subjects only show when *Show message previews* is on. Clicking opens webmail for Gmail/Outlook/Yahoo/iCloud servers, `openUrl` if you set one, or your default mail app.
 
 ## Known limitations
 

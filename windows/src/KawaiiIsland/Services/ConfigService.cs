@@ -127,6 +127,9 @@ public sealed class AppConfig
         if (Appearance.Mascot == CustomMascot && !File.Exists(CustomMascotPath)) Appearance.Mascot = DefaultMascot;
         Behavior.AutoCollapseSeconds = Math.Clamp(Behavior.AutoCollapseSeconds, 0, 600); // 0 = never
         Modules.Mail.PollSeconds = Math.Clamp(Modules.Mail.PollSeconds, 15, 3600);
+        Modules.Mail.Provider = OneOf(Modules.Mail.Provider, "mock", "mock", "imap");
+        Modules.Mail.Port = Math.Clamp(Modules.Mail.Port, 1, 65535);
+        Modules.Mail.Server ??= ""; Modules.Mail.Username ??= ""; Modules.Mail.OpenUrl ??= "";
         Modules.Shortcuts.Max = Math.Clamp(Modules.Shortcuts.Max, 1, 24);
     }
 
@@ -190,6 +193,8 @@ public sealed class MailConfig
     public bool Ssl { get; set; } = true;
     public string Username { get; set; } = "";
     public int PollSeconds { get; set; } = 60;
+    /// <summary>Where clicking mail goes; empty = webmail guessed from the server, else the default mail app.</summary>
+    public string OpenUrl { get; set; } = "";
 }
 
 public sealed class NotificationsConfig

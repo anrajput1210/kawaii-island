@@ -9,7 +9,7 @@ namespace KawaiiIsland;
 /// </summary>
 public partial class IslandWindow
 {
-    private enum View { Home, Music, Code, Alerts }
+    private enum View { Home, Music, Code, Alerts, Mail }
 
     private View _view = View.Home;
     private View? _picked;   // tab the user chose; null = automatic
@@ -44,11 +44,13 @@ public partial class IslandWindow
         MascotSmall.Visibility = Vis(!music && HasMascot);
         MascotSmall.HorizontalAlignment = minimal ? HorizontalAlignment.Center : flash ? HorizontalAlignment.Right : HorizontalAlignment.Left;
         Clock.Visibility = Vis(!minimal && !music && !flash);
+        MailBadge.Visibility = Vis(!minimal && !music && !flash && !_codeBusy && Unread > 0);
 
         // Key line takes the tint of the active content (design guidelines: "Shell").
         Color? tint = _codeBusy ? CodeColor(_tracker.Active?.State)
                     : flash ? AvatarColor(_flash!.App)
                     : music ? MusicTint
+                    : Unread > 0 ? MailTint
                     : CodeMode ? Accent()
                     : null;
         Pill.BorderBrush = new SolidColorBrush(tint is { } t ? Color.FromArgb(0xB0, t.R, t.G, t.B) : Color.FromArgb(0x26, 0x80, 0x80, 0x80));
@@ -58,19 +60,20 @@ public partial class IslandWindow
 
     private void RenderExpanded()
     {
-        bool code = CodeMode, music = _media is not null, alerts = _feed.Items.Count > 0;
+        bool code = CodeMode, music = _media is not null, alerts = _feed.Items.Count > 0, mail = _mail is not null;
         _view = _picked switch
         {
             View.Code when code => View.Code,
             View.Music when music => View.Music,
             View.Alerts when alerts => View.Alerts,
+            View.Mail when mail => View.Mail,
             _ when code && _codeBusy => View.Code,
             _ when _flash is not null => View.Alerts,
             _ when music && _media!.Playing => View.Music,
-            _ => code ? View.Code : music ? View.Music : alerts ? View.Alerts : View.Home,
+            _ => code ? View.Code : music ? View.Music : Unread > 0 ? View.Mail : alerts ? View.Alerts : View.Home,
         };
-        bool tabs = (code ? 1 : 0) + (music ? 1 : 0) + (alerts ? 1 : 0) > 1;
-        bool header = _view is View.Music or View.Alerts;
+        bool tabs = (code ? 1 : 0) + (music ? 1 : 0) + (alerts ? 1 : 0) + (mail ? 1 : 0) > 1;
+        bool header = _view is View.Music or View.Alerts or View.Mail;
         TabRow.Visibility = Vis(tabs || header);
         Tabs.Visibility = Vis(tabs);
         TabMusic.Visibility = Vis(music);
@@ -79,6 +82,9 @@ public partial class IslandWindow
         TabMusic.IsChecked = _view == View.Music;
         TabCode.IsChecked = _view == View.Code;
         TabAlerts.IsChecked = _view == View.Alerts;
+        TabMail.Visibility = Vis(mail);
+        TabMail.IsChecked = _view == View.Mail;
+        MailPanel.Visibility = Vis(_view == View.Mail);
         MascotTiny.Visibility = SmallClock.Visibility = Vis(header);
         MainRow.Visibility = Vis(!header);
         ClockBlock.Visibility = Greeting.Visibility = Vis(_view == View.Home);

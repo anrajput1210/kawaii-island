@@ -45,7 +45,10 @@ public partial class IslandWindow
         Eq.HorizontalAlignment = minimal ? HorizontalAlignment.Center : HorizontalAlignment.Right;
         MascotSmall.Visibility = Vis(!music && (HasMascot || dropping));
         MascotSmall.HorizontalAlignment = minimal ? HorizontalAlignment.Center : flash ? HorizontalAlignment.Right : HorizontalAlignment.Left;
-        Clock.Visibility = Vis(!minimal && !music && !flash);
+        bool rest = !minimal && !music && !flash && !code && !dropping; // plain resting pill: user-chosen widgets
+        Clock.Visibility = Vis(!minimal && !music && !flash && (Widgets.PillClock || code || dropping));
+        PillWeather.Visibility = Vis(rest && Widgets.PillWeather && _weather is not null);
+        PillBattery.Visibility = Vis(rest && Widgets.PillBattery && _battery is not null);
         MailBadge.Visibility = Vis(!minimal && !music && !flash && !code && !dropping && Unread > 0);
 
         // Key line takes the tint of the active content (design guidelines: "Shell").
@@ -93,7 +96,8 @@ public partial class IslandWindow
         MailPanel.Visibility = Vis(_view == View.Mail);
         MascotTiny.Visibility = SmallClock.Visibility = CodeToggleSmall.Visibility = Vis(header); // one </> button per view
         MainRow.Visibility = Vis(!header);
-        ClockBlock.Visibility = Vis(_view == View.Home);
+        ClockBlock.Visibility = Vis(_view == View.Home && Widgets.HomeClock);
+        HomeWidgets.Visibility = Vis(_view == View.Home && HomeWidgets.Children.Count > 0);
         Greeting.Visibility = Vis(_view == View.Home && !apps);
         CodeHeader.Visibility = CodeFooter.Visibility = Vis(_view == View.Code);
         CodeMeters.Visibility = Vis(_view == View.Code && _tracker.Active?.Agent is null or "Claude Code"); // usage meters are Claude-only

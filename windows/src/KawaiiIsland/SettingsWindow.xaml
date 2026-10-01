@@ -160,6 +160,7 @@
                 </StackPanel>
                 <StackPanel x:Name="Nav">
                     <RadioButton Style="{StaticResource NavItem}" Content="General" Tag="&#xE713;" x:Name="NavGeneral"/>
+                    <RadioButton Style="{StaticResource NavItem}" Content="Widgets" Tag="&#xE80A;" x:Name="NavWidgets"/>
                     <RadioButton Style="{StaticResource NavItem}" Content="Position" Tag="&#xE7F4;" x:Name="NavPosition"/>
                     <RadioButton Style="{StaticResource NavItem}" Content="Appearance" Tag="&#xE790;" x:Name="NavAppearance"/>
                     <RadioButton Style="{StaticResource NavItem}" Content="Notifications" Tag="&#xEA8F;" x:Name="NavNotifications"/>
@@ -178,6 +179,14 @@
 
                 <StackPanel x:Name="PageGeneral">
                     <Border Style="{StaticResource Card}" Margin="0,14,0,0"><StackPanel x:Name="BehaviorPanel"/></Border>
+                </StackPanel>
+                <StackPanel x:Name="PageWidgets">
+                    <TextBlock Style="{StaticResource Section}" Text="Resting island" Margin="2,14,0,10"/>
+                    <Border Style="{StaticResource Card}"><StackPanel x:Name="PillWidgetsPanel"/></Border>
+                    <TextBlock Style="{StaticResource Section}" Text="Open island"/>
+                    <Border Style="{StaticResource Card}"><StackPanel x:Name="HomeWidgetsPanel"/></Border>
+                    <TextBlock Style="{StaticResource Section}" Text="Weather"/>
+                    <Border Style="{StaticResource Card}"><StackPanel x:Name="WeatherPanel"/></Border>
                 </StackPanel>
                 <StackPanel x:Name="PagePosition">
                     <Border Style="{StaticResource Card}" Margin="0,14,0,0"><StackPanel x:Name="PositionPanel"/></Border>

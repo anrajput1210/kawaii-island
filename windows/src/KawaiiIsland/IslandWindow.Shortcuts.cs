@@ -94,16 +94,19 @@ public partial class IslandWindow
                                    Width = 28, Height = 28, TextAlignment = TextAlignment.Center, Padding = new Thickness(0, 5, 0, 0) };
         var tile = new Button { Style = (Style)FindResource("Tile"), Content = TileContent(plus, "Add"), ToolTip = "Pin an app (or drop a file on the island)" };
         AutomationProperties(tile, "Add an app");
-        tile.Click += (_, _) =>
-        {
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Title = "Pin an app", Filter = "Apps and shortcuts|*.exe;*.lnk;*.url;*.bat;*.cmd|All files|*.*", Multiselect = true,
-                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu) + @"\Programs",
-            };
-            if (dialog.ShowDialog() == true) PinAll(dialog.FileNames);
-        };
+        tile.Click += (_, _) => ShowAppPicker();
         return tile;
+    }
+
+    /// <summary>Installed-apps list (Start menu + Store apps); "Browse for a file…" covers anything else.</summary>
+    public void ShowAppPicker()
+    {
+        SetExpanded(false);
+        var picker = new AppPickerWindow(_config.Directory, Apps.Items.Select(i => i.Path));
+        if (picker.ShowDialog() != true) return;
+        int added = picker.ChosenApps.Count(a => ShortcutLauncher.PinApp(Apps.Items, a, Apps.Max) == PinResult.Added);
+        if (added > 0) { Apps.Enabled = true; SaveApps(); }
+        if (picker.ChosenFiles.Length > 0) PinAll(picker.ChosenFiles);
     }
 
     private static StackPanel TileContent(FrameworkElement icon, string label)

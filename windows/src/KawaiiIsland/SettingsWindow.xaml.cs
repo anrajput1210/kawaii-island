@@ -30,6 +30,7 @@ public partial class SettingsWindow : Window
 
     private (RadioButton Nav, StackPanel Page, string Caption)[] Pages => [
         (NavGeneral, PageGeneral, "Startup, keyboard shortcut, collapsing and which modules are on."),
+        (NavWidgets, PageWidgets, "Choose what the island shows: time, weather, batteries and your apps."),
         (NavPosition, PagePosition, "Where the island lives and how it gets out of the way."),
         (NavAppearance, PageAppearance, "Theme, accent colour, mascot and the island's size."),
         (NavNotifications, PageNotifications, "Windows notifications mirrored on the island. Kept in memory on this PC only."),
@@ -112,12 +113,10 @@ public partial class SettingsWindow : Window
         hotkey.LostFocus += (_, _) => { if (hotkey.Text.Trim() != C.Behavior.Hotkey) ApplyHotkey(); };
         var hotkeyRow = new StackPanel { Children = { hotkey, hotkeyNote } };
         Field(BehaviorPanel, "Keyboard shortcut", hotkeyRow, below: true);
-        Switch(BehaviorPanel, "App shortcuts", "Your pinned apps on the island. Add with + or drop files on the island; right-click an app to rename or remove it.",
-               C.Modules.Shortcuts.Enabled, Island.SetShortcutsEnabled);
-        Field(BehaviorPanel, "Max pinned apps", Segments([("4", "4"), ("6", "6"), ("8", "8"), ("12", "12")], C.Modules.Shortcuts.Max.ToString(),
-               v => { C.Modules.Shortcuts.Max = int.Parse(v); _app.Config.SaveSoon(); Island.SetShortcutsEnabled(C.Modules.Shortcuts.Enabled); }));
         Switch(BehaviorPanel, "Music", "Shows what's playing in any app that uses Windows media controls: Spotify, Apple Music, browsers, VLC…",
                Island.MusicEnabled, Island.SetMusicEnabled);
+
+        BuildWidgets();
 
         AppearancePanel.Children.Clear();
         Field(AppearancePanel, "Theme", Segments([("Dark", "dark"), ("Light", "light"), ("Auto", "auto")], C.Appearance.Theme,
@@ -226,6 +225,47 @@ public partial class SettingsWindow : Window
         };
         StyleBox(box);
         return box;
+    }
+
+    /// <summary>Settings → Widgets: what the resting pill and the open island show.</summary>
+    private void BuildWidgets()
+    {
+        var wg = C.Modules.Widgets;
+        void Pill(Action set) { set(); Changed(); _ = Island.RefreshWidgetsAsync(); } // pill width changes: re-place
+        void Home(Action set) { set(); _app.Config.SaveSoon(); _ = Island.RefreshWidgetsAsync(); }
+
+        PillWidgetsPanel.Children.Clear();
+        Switch(PillWidgetsPanel, "Time", "The clock next to the mascot.", wg.PillClock, on => Pill(() => wg.PillClock = on));
+        Switch(PillWidgetsPanel, "Weather", "Temperature and sky, e.g. ☀ 21°.", wg.PillWeather, on => Pill(() => wg.PillWeather = on));
+        Switch(PillWidgetsPanel, "Battery", "Your laptop's charge.", wg.PillBattery, on => Pill(() => wg.PillBattery = on));
+
+        HomeWidgetsPanel.Children.Clear();
+        Switch(HomeWidgetsPanel, "Time and date", "Big clock with today's date.", wg.HomeClock, on => Home(() => wg.HomeClock = on));
+        Switch(HomeWidgetsPanel, "Weather", "Temperature, sky and place.", wg.HomeWeather, on => Home(() => wg.HomeWeather = on));
+        Switch(HomeWidgetsPanel, "Laptop battery", "Charge and whether it's plugged in.", wg.HomeBattery, on => Home(() => wg.HomeBattery = on));
+        Switch(HomeWidgetsPanel, "Bluetooth devices", "Battery of connected headphones, mice and controllers that report it (as in Windows Settings).",
+               wg.HomeBluetooth, on => Home(() => wg.HomeBluetooth = on));
+        Switch(HomeWidgetsPanel, "Pinned apps", "Your apps under the clock. Right-click one on the island to rename or remove it.",
+               C.Modules.Shortcuts.Enabled, Island.SetShortcutsEnabled);
+        var choose = new Button { Content = "Choose apps…", Padding = new Thickness(14, 5, 14, 5) };
+        choose.Click += (_, _) => Island.ShowAppPicker();
+        Field(HomeWidgetsPanel, "Apps on the island", choose);
+        Field(HomeWidgetsPanel, "Max pinned apps", Segments([("4", "4"), ("6", "6"), ("8", "8"), ("12", "12")], C.Modules.Shortcuts.Max.ToString(),
+               v => { C.Modules.Shortcuts.Max = int.Parse(v); _app.Config.SaveSoon(); Island.SetShortcutsEnabled(C.Modules.Shortcuts.Enabled); }));
+
+        WeatherPanel.Children.Clear();
+        var city = new TextBox { Text = wg.City, Padding = new Thickness(6, 4, 6, 4), ToolTip = "Leave empty to use Windows location. Press Enter to apply." };
+        StyleBox(city);
+        AutomationProperties.SetName(city, "Weather city");
+        void ApplyCity() { if (city.Text.Trim() == wg.City) return; wg.City = city.Text.Trim(); _app.Config.SaveSoon(); _ = Island.RefreshWidgetsAsync(); }
+        city.KeyDown += (_, e) => { if (e.Key == Key.Enter) ApplyCity(); };
+        city.LostFocus += (_, _) => ApplyCity();
+        Field(WeatherPanel, "City", city);
+        Field(WeatherPanel, "Units", Segments([("°C", "c"), ("°F", "f")], wg.Fahrenheit ? "f" : "c",
+               v => Home(() => wg.Fahrenheit = v == "f")));
+        var note = Label("From Open-Meteo (free, no account). Only the city, or your location rounded to about 10 km, leaves this PC.", 11.5, "IslandMuted");
+        note.TextWrapping = TextWrapping.Wrap;
+        Row(WeatherPanel, note);
     }
 
     private static void StyleBox(Control box)

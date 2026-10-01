@@ -106,6 +106,8 @@ public sealed class AppConfig
         Window ??= new(); Appearance ??= new(); Modules ??= new(); Behavior ??= new();
         Modules.Mail ??= new(); Modules.Notifications ??= new(); Modules.Music ??= new(); Modules.Shortcuts ??= new();
         Modules.Code ??= new();
+        Modules.Widgets ??= new();
+        Modules.Widgets.City ??= "";
         Modules.Code.Port = Math.Clamp(Modules.Code.Port, 1024, 65535);
         Modules.Notifications.Muted ??= [];
         Modules.Notifications.Source = OneOf(Modules.Notifications.Source, "windows", "windows", "mock");
@@ -168,6 +170,22 @@ public sealed class ModulesConfig
     public MusicConfig Music { get; set; } = new();
     public ShortcutsConfig Shortcuts { get; set; } = new();
     public CodeConfig Code { get; set; } = new();
+    public WidgetsConfig Widgets { get; set; } = new();
+}
+
+/// <summary>What the island shows (Settings → Widgets). "Pill" = the small resting island, "Home" = expanded.</summary>
+public sealed class WidgetsConfig
+{
+    public bool PillClock { get; set; } = true;
+    public bool PillWeather { get; set; }
+    public bool PillBattery { get; set; }
+    public bool HomeClock { get; set; } = true;
+    public bool HomeWeather { get; set; } = true;
+    public bool HomeBattery { get; set; } = true;
+    public bool HomeBluetooth { get; set; } = true;
+    /// <summary>City for the weather; empty = Windows location (when allowed).</summary>
+    public string City { get; set; } = "";
+    public bool Fahrenheit { get; set; } = !System.Globalization.RegionInfo.CurrentRegion.IsMetric;
 }
 
 /// <summary>Code mode: Claude Code session companion. Listener is 127.0.0.1-only; data is kept in memory only.</summary>

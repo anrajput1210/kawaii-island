@@ -91,6 +91,7 @@ public partial class IslandWindow : Window
         InitAlerts();
         InitMail();
         InitShortcuts();
+        InitWidgets();
         _sleepTimer.Tick += (_, _) => UpdateSleepy();
         _sleepTimer.Start();
     }
@@ -475,7 +476,8 @@ public partial class IslandWindow : Window
     /// "minimal" state), so the reserved side strip is 56 px instead of the full pill width.</summary>
     private bool SideDocked => Win.AppBarEnabled && DockEdge is Edge.Left or Edge.Right;
 
-    private (double W, double H) RestSize => SideDocked ? (MinimalSize, MinimalSize) : (Win.CollapsedWidth, Win.CollapsedHeight);
+    private (double W, double H) RestSize => SideDocked ? (MinimalSize, MinimalSize)
+        : (Math.Max(120, Win.CollapsedWidth + PillWidgetWidth), Win.CollapsedHeight);
     private const double MinimalSize = 44;
 
     /// <summary>Switches the resting size between collapsed (180x36) and compact-active (280x40).</summary>

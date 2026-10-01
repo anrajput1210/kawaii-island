@@ -20,6 +20,8 @@ A cute, customizable **Dynamic Island for Windows 11** (macOS version in progres
 - **Music from any player** via Windows media controls (SMTC): Spotify, Apple Music, browser tabs, VLC… with no login. The accent color comes from the album art.
 - **Notifications mirroring** (toasts), **mail** headers over IMAP (unread count and latest 5; bodies are never downloaded), **app shortcuts** (drop a file on the island to pin it).
 - **5 mascots** (Kiko, Miso the cat, Bun the bunny, Bolt the robot, Ribbit the frog). They blink, peek out to say hi when the island is hidden, squish when clicked, and get dizzy if you click three times fast.
+- **Widgets you choose** (Settings → Widgets): time, weather (Open-Meteo, no account), laptop battery and Bluetooth device batteries, in the resting pill and/or the open island.
+- **Pinned apps from a real app list**: "+" opens your installed apps (desktop and Store, searchable), not a file browser.
 - Drag to move, edge snapping, auto-hide in fullscreen, dark/light themes, tray icon.
 - **Ctrl+Alt+I** opens and closes the island from anywhere (change it in Settings → Behavior). **Start with Windows** is on by default for installed builds.
 - **Coding mode** (`</>` button on the island): the mascot puts on a hoodie and glasses, a lock-in timer runs, and alerts stop popping the island open.
@@ -64,7 +66,7 @@ Turn on **coding mode** with the `</>` button on the island: the mascot puts on 
 - Settings: `%LOCALAPPDATA%\KawaiiIsland\config.json` (local, not roaming). macOS: `~/Library/Application Support/KawaiiIsland/`.
 - Mail passwords are encrypted with Windows DPAPI (current user, this machine). On macOS they go in the login Keychain with iCloud sync disabled. They are never written to `config.json`.
 - Mirrored notifications are kept in memory only (last 20) and disappear when the app quits. Only the names of apps you mute are saved.
-- The only network traffic is to **your own mail server** if you turn on IMAP.
+- The only network traffic is to **your own mail server** if you turn on IMAP, and to **Open-Meteo** for weather (just the city you typed, or your location rounded to about 10 km). Turn the weather widgets off and nothing is sent.
 
 ## Build from source
 

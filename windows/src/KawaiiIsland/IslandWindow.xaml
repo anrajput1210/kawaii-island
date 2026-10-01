@@ -156,6 +156,15 @@
                 </StackPanel>
                 <StackPanel x:Name="Eq" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Height="16" Visibility="Collapsed"/>
                 <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Widgets chosen for the resting pill (Settings → Widgets) -->
+                    <TextBlock x:Name="PillWeather" Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Collapsed"
+                               Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}" FontWeight="SemiBold" FontSize="12.5"/>
+                    <StackPanel x:Name="PillBattery" Orientation="Horizontal" Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Collapsed">
+                        <TextBlock x:Name="PillBatteryGlyph" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource IslandText}"/>
+                        <TextBlock x:Name="PillBatteryText" Margin="4,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource IslandText}"
+                                   FontFamily="{DynamicResource IslandFont}" FontWeight="SemiBold" FontSize="12.5"/>
+                    </StackPanel>
                     <!-- Unread mail badge (spec §3.1) -->
                     <StackPanel x:Name="MailBadge" Orientation="Horizontal" Margin="0,0,8,0" Visibility="Collapsed" VerticalAlignment="Center">
                         <TextBlock Text="&#xE715;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" Foreground="#4DA3FF" VerticalAlignment="Center"/>
@@ -192,11 +201,13 @@
                         <c:MascotControl x:Name="MascotLarge" DockPanel.Dock="Right" Width="40" Height="40" VerticalAlignment="Top"/>
                         <Button x:Name="CodeToggle" DockPanel.Dock="Right" Style="{StaticResource Glyph}" Content="&#xE943;" FontSize="16"
                                 VerticalAlignment="Top" Margin="0,2,6,0" AutomationProperties.Name="Coding mode"/>
-                        <StackPanel x:Name="ClockBlock">
+                        <StackPanel x:Name="ClockBlock" DockPanel.Dock="Left" Margin="0,0,8,0">
                             <TextBlock x:Name="BigClock" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
                                        FontWeight="SemiBold" FontSize="34"/>
                             <TextBlock x:Name="DateText" Foreground="{DynamicResource IslandMuted}" FontFamily="{DynamicResource IslandFont}" FontSize="13"/>
                         </StackPanel>
+                        <!-- Home widgets (Settings → Widgets): weather, laptop battery, Bluetooth batteries; thin dividers, no pills -->
+                        <StackPanel x:Name="HomeWidgets" DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center"/>
                         <!-- Code mode header -->
                         <StackPanel x:Name="CodeHeader" Visibility="Collapsed">
                             <TextBlock x:Name="CodeTitle" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"

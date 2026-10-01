@@ -131,9 +131,17 @@
                                FontFamily="{DynamicResource IslandFont}" FontSize="12" FontWeight="Medium" TextTrimming="CharacterEllipsis" MaxWidth="185"/>
                 </StackPanel>
                 <StackPanel x:Name="Eq" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Height="16" Visibility="Collapsed"/>
-                <TextBlock x:Name="Clock" HorizontalAlignment="Right" VerticalAlignment="Center"
-                           Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
-                           FontWeight="SemiBold" FontSize="13"/>
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Unread mail badge (spec §3.1) -->
+                    <StackPanel x:Name="MailBadge" Orientation="Horizontal" Margin="0,0,8,0" Visibility="Collapsed" VerticalAlignment="Center">
+                        <TextBlock Text="&#xE715;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" Foreground="#4DA3FF" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="MailBadgeCount" Margin="4,0,0,0" Foreground="#4DA3FF" FontFamily="{DynamicResource IslandFont}"
+                                   FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock x:Name="Clock" VerticalAlignment="Center"
+                               Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
+                               FontWeight="SemiBold" FontSize="13"/>
+                </StackPanel>
             </Grid>
 
             <!-- Expanded: laid out at its final size and revealed as the pill grows (no reflow while animating).
@@ -152,6 +160,7 @@
                             <RadioButton x:Name="TabMusic" Content="Music" Style="{StaticResource Tab}" GroupName="view"/>
                             <RadioButton x:Name="TabCode" Content="Code" Style="{StaticResource Tab}" GroupName="view"/>
                             <RadioButton x:Name="TabAlerts" Content="Alerts" Style="{StaticResource Tab}" GroupName="view"/>
+                            <RadioButton x:Name="TabMail" Content="Mail" Style="{StaticResource Tab}" GroupName="view"/>
                         </StackPanel>
                     </DockPanel>
                     <DockPanel x:Name="MainRow">
@@ -219,6 +228,16 @@
                                 <Button x:Name="NextButton" Style="{StaticResource Glyph}" Content="&#xE893;" FontSize="16" ToolTip="Next" AutomationProperties.Name="Next"/>
                             </StackPanel>
                         </Grid>
+                    </StackPanel>
+
+                    <!-- Mail (spec §3.1): unread count + latest 5 headers; clicking opens mail -->
+                    <StackPanel x:Name="MailPanel" Visibility="Collapsed">
+                        <DockPanel>
+                            <Button x:Name="OpenMailButton" DockPanel.Dock="Right" Style="{StaticResource TextButton}" Content="Open mail" Margin="0,-6,-16,-6"/>
+                            <TextBlock x:Name="MailCount" Foreground="{DynamicResource IslandText}" FontFamily="{DynamicResource IslandFont}"
+                                       FontSize="15" FontWeight="SemiBold"/>
+                        </DockPanel>
+                        <StackPanel x:Name="MailList" Margin="0,6,0,0"/>
                     </StackPanel>
 
                     <!-- Alerts (spec §3.2): one notification at a time, ‹ › through the last 20 -->

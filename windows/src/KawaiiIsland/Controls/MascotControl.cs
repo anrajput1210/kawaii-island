@@ -1,9 +1,7 @@
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using KawaiiIsland.Services;
 using Native = KawaiiIsland.Services.Native;
@@ -54,41 +52,14 @@ public sealed class MascotControl : Image
     }
 
     /// <summary>Vector art for a skin/expression/outfit; unknown skins fall back to the default mascot.
-    /// "none" → no picture; "custom" → the user's own picture (same for every expression).</summary>
+    /// "none" → no picture.</summary>
     public static ImageSource? Art(string skin, string expression, string outfit = "")
     {
         if (skin == AppConfig.NoMascot) return null;
-        if (skin == AppConfig.CustomMascot) return CustomArt();
         string suffix = outfit.Length > 0 ? "." + outfit : "";
         return (ImageSource)(Application.Current.TryFindResource($"Mascot.{skin}.{expression}{suffix}")
                              ?? Application.Current.FindResource($"Mascot.{AppConfig.DefaultMascot}.{expression}{suffix}"));
     }
-
-    private static ImageSource? _custom;
-
-    /// <summary>Loaded once into memory (file not kept open); <see cref="ReloadCustom"/> after it changes.</summary>
-    private static ImageSource? CustomArt()
-    {
-        if (_custom is not null) return _custom;
-        try
-        {
-            var bmp = new BitmapImage();
-            bmp.BeginInit();
-            bmp.CacheOption = BitmapCacheOption.OnLoad;
-            bmp.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-            bmp.DecodePixelWidth = 128;
-            bmp.UriSource = new Uri(AppConfig.CustomMascotPath);
-            bmp.EndInit();
-            bmp.Freeze();
-            return _custom = bmp;
-        }
-        catch (Exception ex) when (ex is IOException or NotSupportedException or UnauthorizedAccessException or ArgumentException)
-        {
-            return null; // unreadable picture: no mascot rather than a crash
-        }
-    }
-
-    public static void ReloadCustom() => _custom = null;
 
     private void Refresh()
     {

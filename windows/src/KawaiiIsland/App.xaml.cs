@@ -142,7 +142,7 @@ public partial class App : Application
         menu.Items.Add(Check("Auto-hide in fullscreen", island.AutoHideFullscreen, on => island.SetAutoHide(on, island.AutoHideAlways)));
         menu.Items.Add(Check("Auto-hide always", island.AutoHideAlways, on => island.SetAutoHide(island.AutoHideFullscreen, on)));
         menu.Items.Add(new Separator());
-        string[] mascots = [.. AppConfig.Mascots, .. File.Exists(AppConfig.CustomMascotPath) ? [AppConfig.CustomMascot] : Array.Empty<string>(), AppConfig.NoMascot];
+        string[] mascots = [.. AppConfig.Mascots, AppConfig.NoMascot];
         menu.Items.Add(Choice("Mascot", mascots.Select(m => (MascotName(m), m)).ToArray(),
                               Config.Current.Appearance.Mascot, v => { Config.Current.Appearance.Mascot = v; SettingsChanged(); }));
         menu.Items.Add(Choice("Collapse after", CollapseChoices, island.AutoCollapseSeconds.ToString(), v => island.SetAutoCollapse(int.Parse(v))));
@@ -167,7 +167,7 @@ public partial class App : Application
     internal static string MascotName(string key) => key switch
     {
         "kiko" => "Kiko · anime girl", "miso" => "Miso · cat", "bun" => "Bun · bunny", "bolt" => "Bolt · robot", "ribbit" => "Ribbit · frog",
-        AppConfig.NoMascot => "No mascot", AppConfig.CustomMascot => "Your own picture", _ => key,
+        AppConfig.NoMascot => "No mascot", _ => key,
     };
 
     /// <summary>Persist (debounced 500 ms) and re-apply to the island (debounced 150 ms, re-docks the AppBar).</summary>

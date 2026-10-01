@@ -9,6 +9,7 @@ using System.Windows.Shapes;
 using KawaiiIsland.Controls;
 using KawaiiIsland.Services;
 using KawaiiIsland.Services.ClaudeCode;
+using KawaiiIsland.Services.Mail;
 
 namespace KawaiiIsland;
 
@@ -94,6 +95,8 @@ public partial class SettingsWindow : Window
                notify.ShowPreview, on => { notify.ShowPreview = on; _app.Config.SaveSoon(); });
         Field(NotifyPanel, "Muted apps", MutedApps());
 
+        BuildMail();
+
         CodePanel.Children.Clear();
         Switch(CodePanel, "Code mode (Claude Code)",
                $"Shows what Claude Code is doing, context used and plan usage left. Adds hooks to {ClaudeSettings.SettingsPath}; turning it off removes them.",
@@ -103,6 +106,64 @@ public partial class SettingsWindow : Window
                C.Modules.Code.Approvals, on => { C.Modules.Code.Approvals = on; _app.Config.SaveSoon(); });
 
         Footer.Text = $"Saved on this PC in {_app.Config.Directory}";
+    }
+
+    /// <summary>Mail (spec §3.1). Field edits apply on "Save & connect"; the password goes to DPAPI, never config.json.</summary>
+    private void BuildMail()
+    {
+        var mail = C.Modules.Mail;
+        MailSettingsPanel.Children.Clear();
+        Switch(MailSettingsPanel, "Show mail", Island.MailProblem ?? "Unread count on the island and your latest 5 messages (headers only, never bodies).",
+               mail.Enabled, async on => { mail.Enabled = on; _app.Config.SaveSoon(); await Island.RestartMailAsync(); Later(Reload); });
+        Field(MailSettingsPanel, "Account", Segments([("Demo inbox", "mock"), ("IMAP", "imap")], mail.Provider,
+               async v => { mail.Provider = v; _app.Config.SaveSoon(); await Island.RestartMailAsync(); Later(Reload); }));
+        if (mail.Provider != "imap") return;
+
+        var server = TextRow("Server", mail.Server, "imap.gmail.com");
+        var port = TextRow("Port", mail.Port.ToString(), "993");
+        var user = TextRow("Username", mail.Username, "you@example.com");
+        var password = new PasswordBox { Padding = new Thickness(6, 4, 6, 4) };
+        StyleBox(password);
+        AutomationProperties.SetName(password, "Password");
+        Field(MailSettingsPanel, MailSecret.Exists(_app.Config.Directory) ? "Password (saved, type to replace)" : "App password", password);
+        var url = TextRow("Open mail at (optional)", mail.OpenUrl, "https://… (blank = guess from server)");
+        Switch(MailSettingsPanel, "SSL/TLS", "Port 993 uses SSL. Off = STARTTLS when the server offers it.", mail.Ssl, on => mail.Ssl = on);
+
+        var save = new Button { Content = "Save & connect", Padding = new Thickness(14, 5, 14, 5), Margin = new Thickness(0, 8, 0, 4), HorizontalAlignment = HorizontalAlignment.Left };
+        save.Click += async (_, _) =>
+        {
+            mail.Server = server.Text.Trim();
+            mail.Port = int.TryParse(port.Text, out var p) ? Math.Clamp(p, 1, 65535) : 993;
+            mail.Username = user.Text.Trim();
+            string link = url.Text.Trim();
+            mail.OpenUrl = link.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ? link : "";
+            if (password.Password.Length > 0) MailSecret.Save(_app.Config.Directory, password.Password);
+            _app.Config.SaveSoon();
+            save.IsEnabled = false;
+            save.Content = "Connecting…";
+            await Island.RestartMailAsync();
+            Later(Reload);
+        };
+        MailSettingsPanel.Children.Add(save);
+        var note = Label("Gmail/Outlook: use an app password (OAuth isn't supported yet). Everything stays on this PC.", 11.5, "IslandMuted");
+        note.TextWrapping = TextWrapping.Wrap;
+        MailSettingsPanel.Children.Add(note);
+
+        TextBox TextRow(string label, string value, string hint)
+        {
+            var box = new TextBox { Text = value, Padding = new Thickness(6, 4, 6, 4), ToolTip = hint };
+            StyleBox(box);
+            AutomationProperties.SetName(box, label);
+            Field(MailSettingsPanel, label, box);
+            return box;
+        }
+    }
+
+    private static void StyleBox(Control box)
+    {
+        box.SetResourceReference(BackgroundProperty, "SettingsBackground");
+        box.SetResourceReference(ForegroundProperty, "IslandText");
+        box.SetResourceReference(BorderBrushProperty, "SettingsLine");
     }
 
     private void Changed()
@@ -241,11 +302,9 @@ public partial class SettingsWindow : Window
     private FrameworkElement MascotPicker()
     {
         var row = new WrapPanel();
-        foreach (var key in (string[])[.. AppConfig.Mascots, AppConfig.CustomMascot, AppConfig.NoMascot])
+        foreach (var key in (string[])[.. AppConfig.Mascots, AppConfig.NoMascot])
         {
-            bool custom = key == AppConfig.CustomMascot;
             object face = key == AppConfig.NoMascot ? Label("Off", 12, "IslandMuted", bold: true)
-                        : custom && !System.IO.File.Exists(AppConfig.CustomMascotPath) ? Label("+ Yours", 12, "IslandMuted", bold: true)
                         : new Image { Width = 38, Height = 38, Source = MascotControl.Art(key, "idle") };
             if (face is TextBlock t) { t.Width = 38; t.Height = 38; t.TextAlignment = TextAlignment.Center; t.Padding = new Thickness(0, 11, 0, 0); }
             var rb = new RadioButton
@@ -255,10 +314,8 @@ public partial class SettingsWindow : Window
                 IsChecked = key == C.Appearance.Mascot,
             };
             AutomationProperties.SetName(rb, App.MascotName(key));
-            if (custom) rb.PreviewMouseLeftButtonUp += (_, _) => Later(PickCustomMascot); // click again to replace the picture
             rb.Checked += (_, _) =>
             {
-                if (custom && !System.IO.File.Exists(AppConfig.CustomMascotPath)) return; // PickCustomMascot sets it once chosen
                 C.Appearance.Mascot = key;
                 HeaderMascot.Source = MascotControl.Art(key, "happy");
                 Changed();
@@ -266,27 +323,6 @@ public partial class SettingsWindow : Window
             row.Children.Add(rb);
         }
         return row;
-    }
-
-    /// <summary>Copies the chosen picture into the app's local folder so the mascot survives the original moving.</summary>
-    private void PickCustomMascot()
-    {
-        var dialog = new Microsoft.Win32.OpenFileDialog { Title = "Choose your mascot", Filter = "Pictures|*.png;*.jpg;*.jpeg;*.bmp;*.gif" };
-        if (dialog.ShowDialog(this) != true) { Reload(); return; }
-        try
-        {
-            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(AppConfig.CustomMascotPath)!);
-            System.IO.File.Copy(dialog.FileName, AppConfig.CustomMascotPath, overwrite: true);
-        }
-        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
-        {
-            MessageBox.Show(this, "Couldn't use that picture: " + ex.Message, "Kawaii Island");
-            return;
-        }
-        MascotControl.ReloadCustom();
-        C.Appearance.Mascot = AppConfig.CustomMascot;
-        _app.SettingsChanged();
-        Reload();
     }
 
     private static TextBlock Label(string text, double size, string brushKey, bool bold = false, Thickness margin = default)

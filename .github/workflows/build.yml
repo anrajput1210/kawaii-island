@@ -23,3 +23,16 @@ jobs:
         run: dotnet build windows/KawaiiIsland.sln -c Release
       - name: Test
         run: dotnet test windows/KawaiiIsland.sln -c Release --no-build
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: swift test --package-path macos
+      - name: Bundle
+        run: sh macos/scripts/bundle.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KawaiiIsland-macOS
+          path: macos/build/KawaiiIsland.dmg

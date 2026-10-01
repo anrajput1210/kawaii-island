@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key><string>com.anrajput1210.kawaii-island</string>
+    <key>CFBundleName</key><string>Kawaii Island</string>
+    <key>CFBundleDisplayName</key><string>Kawaii Island</string>
+    <key>CFBundleExecutable</key><string>KawaiiIsland</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleShortVersionString</key><string>0.1.0</string>
+    <key>CFBundleVersion</key><string>1</string>
+    <key>LSMinimumSystemVersion</key><string>13.0</string>
+    <key>LSUIElement</key><true/>
+    <key>NSHighResolutionCapable</key><true/>
+    <key>NSAppleEventsUsageDescription</key><string>Kawaii Island shows what's playing in Music and Spotify and controls play, pause and skip.</string>
+    <key>NSBluetoothAlwaysUsageDescription</key><string>Kawaii Island shows when your AirPods or other Bluetooth devices connect.</string>
+</dict>
+</plist>

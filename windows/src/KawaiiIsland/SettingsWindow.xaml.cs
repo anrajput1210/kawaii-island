@@ -20,7 +20,7 @@ namespace KawaiiIsland;
 public partial class SettingsWindow : Window
 {
     private static readonly (string Name, string Hex)[] Accents =
-        [("Pink", "#FF8FB1"), ("Lavender", "#BF7BFF"), ("Sky", "#4DA3FF"), ("Mint", "#30D158"), ("Tangerine", "#FF9F0A")];
+        [("Pink", "#FF375F"), ("Blue", "#0A84FF"), ("Purple", "#BF5AF2"), ("Green", "#30D158"), ("Orange", "#FF9F0A"), ("Teal", "#64D2FF")]; // Apple system colours
 
     private readonly App _app;
     private AppConfig C => _app.Config.Current;

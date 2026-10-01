@@ -18,7 +18,7 @@ namespace KawaiiIsland;
 public partial class IslandWindow
 {
     private static readonly Color TimerOrange = Color.FromRgb(0xFF, 0x9F, 0x0A), ChargeGreen = Color.FromRgb(0x30, 0xD1, 0x58),
-                                  LowRed = Color.FromRgb(0xFF, 0x45, 0x3A), BtBlue = Color.FromRgb(0x4D, 0xA3, 0xFF);
+                                  LowRed = Color.FromRgb(0xFF, 0x45, 0x3A), BtBlue = Color.FromRgb(0x0A, 0x84, 0xFF);
 
     private sealed record Hud(string Glyph, Color Tint, string Text, string Value, double? Level, DateTimeOffset Until);
 
@@ -245,7 +245,7 @@ public partial class IslandWindow
             BubbleDot.Visibility = Vis(kind == "code");
             BubbleDot.Fill = new SolidColorBrush(CodeColor(_tracker.Active?.State));
             Color edge = kind switch { "timer" => TimerOrange, "music" => MusicTint, _ => CodeColor(_tracker.Active?.State) };
-            Bubble.BorderBrush = new SolidColorBrush(Color.FromArgb(0xB0, edge.R, edge.G, edge.B));
+            Bubble.BorderBrush = new SolidColorBrush(Color.FromArgb(0x38, edge.R, edge.G, edge.B));
             const double gap = 8;
             Bubble.Width = Bubble.Height = pillHeight;
             Bubble.CornerRadius = new CornerRadius(pillHeight / 2);

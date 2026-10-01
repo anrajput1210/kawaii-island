@@ -105,7 +105,6 @@ public partial class IslandWindow
     }
 
     /// <summary>Hover glow follows the album art while the music pill is showing.</summary>
-    private Color GlowColor() => MusicLinePanel.Visibility == Visibility.Visible && _media?.Tint is { } t ? t : Accent();
 
     // ---------------- equalizer ----------------
 

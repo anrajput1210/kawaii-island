@@ -50,7 +50,7 @@ public static class CalendarService
             DateTimeOffset? at = allDay
                 ? start.TryGetProperty("date", out var d) ? DateTimeOffset.Parse(d.GetString()!, CultureInfo.InvariantCulture) : null
                 : DateTimeOffset.Parse(dt.GetString()!, CultureInfo.InvariantCulture);
-            list.Add(new CalendarItem(Str(e, "summary", "(No title)"), at, allDay, "#4DA3FF", false, Str(e, "id", "")));
+            list.Add(new CalendarItem(Str(e, "summary", "(No title)"), at, allDay, "#0A84FF", false, Str(e, "id", "")));
         }
         return list;
     }
@@ -65,7 +65,7 @@ public static class CalendarService
             string raw = e.GetProperty("start").GetProperty("dateTime").GetString()!;
             var at = new DateTimeOffset(DateTime.SpecifyKind(DateTime.Parse(raw, CultureInfo.InvariantCulture), DateTimeKind.Utc));
             bool allDay = e.TryGetProperty("isAllDay", out var a) && a.ValueKind == JsonValueKind.True;
-            list.Add(new CalendarItem(Str(e, "subject", "(No title)"), at, allDay, "#4DA3FF", false, Str(e, "id", "")));
+            list.Add(new CalendarItem(Str(e, "subject", "(No title)"), at, allDay, "#0A84FF", false, Str(e, "id", "")));
         }
         return list;
     }

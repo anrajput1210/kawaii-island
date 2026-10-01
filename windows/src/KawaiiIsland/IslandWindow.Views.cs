@@ -74,7 +74,8 @@ public partial class IslandWindow
                     : Unread > 0 ? MailTint
                     : CodeMode ? Accent()
                     : null;
-        Pill.BorderBrush = new SolidColorBrush(tint is { } t ? Color.FromArgb(0xB0, t.R, t.G, t.B) : Color.FromArgb(0x26, 0x80, 0x80, 0x80));
+        // Subtle key line (Apple): a faint hint of the activity colour, otherwise an almost invisible hairline.
+        Pill.BorderBrush = new SolidColorBrush(tint is { } t ? Color.FromArgb(0x38, t.R, t.G, t.B) : Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF));
     }
 
     private static readonly Color MusicTint = Color.FromRgb(0x30, 0xD1, 0x58);

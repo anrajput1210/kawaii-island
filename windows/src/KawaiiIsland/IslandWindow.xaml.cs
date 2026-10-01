@@ -536,9 +536,9 @@ public partial class IslandWindow : Window
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
         HoverScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(over ? 1.04 : 1, d) { EasingFunction = ease });
         HoverScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(over ? 1.04 : 1, d) { EasingFunction = ease });
-        Shadow.BeginAnimation(DropShadowEffect.ColorProperty, new ColorAnimation(over ? GlowColor() : Colors.Black, d));
-        Shadow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, new DoubleAnimation(over ? 32 : 24, d));
-        Shadow.BeginAnimation(DropShadowEffect.OpacityProperty, new DoubleAnimation(over ? 0.6 : 0.45, d));
+        // Apple-style: a soft black shadow only, never a coloured glow.
+        Shadow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, new DoubleAnimation(over ? 28 : 24, d));
+        Shadow.BeginAnimation(DropShadowEffect.OpacityProperty, new DoubleAnimation(over ? 0.5 : 0.4, d));
 
         if (over)
         {

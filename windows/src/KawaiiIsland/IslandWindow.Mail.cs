@@ -17,7 +17,7 @@ namespace KawaiiIsland;
 /// </summary>
 public partial class IslandWindow
 {
-    private static readonly Color MailTint = Color.FromRgb(0x4D, 0xA3, 0xFF);
+    private static readonly Color MailTint = Color.FromRgb(0x0A, 0x84, 0xFF);
 
     private readonly MailInbox _inbox = new();
     private IMailProvider? _mail;

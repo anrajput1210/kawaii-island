@@ -104,7 +104,7 @@ public partial class App : Application
         SetBrush("SettingsBackground", light ? "#FFFFFF" : "#1C1C21");
         SetBrush("SettingsPanel", light ? "#F5F2F7" : "#26262D");
         SetBrush("SettingsLine", light ? "#E5E1EA" : "#34343E");
-        SetBrush("Accent", a.Accent == "auto" ? WindowsAccent() : a.Accent, fallback: "#FF8FB1");
+        SetBrush("Accent", a.Accent == "auto" ? WindowsAccent() : a.Accent, fallback: "#FF375F");
     }
 
     private void SetBrush(string key, string hex, string fallback = "#000000")
@@ -119,7 +119,7 @@ public partial class App : Application
     internal static string WindowsAccent() =>
         Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM", "AccentColor", null) is int abgr
             ? $"#{abgr & 0xFF:X2}{(abgr >> 8) & 0xFF:X2}{(abgr >> 16) & 0xFF:X2}"
-            : "#FF8FB1";
+            : "#FF375F";
 
     private static bool WindowsUsesLightTheme() =>
         Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 0) is int v && v == 1;

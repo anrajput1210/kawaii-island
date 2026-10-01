@@ -184,7 +184,7 @@ public partial class IslandWindow
             var (value, fill) = _systemMeters[i];
             value.Text = text;
             // Same semantic colours as the Windhawk mod: accent while comfortable, amber under pressure, red when full.
-            fill.Background = new SolidColorBrush(pct >= 90 ? Color.FromRgb(0xFF, 0x45, 0x3A) : pct >= 75 ? Color.FromRgb(0xFF, 0xB3, 0x40) : Accent());
+            fill.Background = new SolidColorBrush(pct >= 90 ? Color.FromRgb(0xFF, 0x45, 0x3A) : pct >= 75 ? Color.FromRgb(0xFF, 0x9F, 0x0A) : Accent());
             if (fill.Parent is Border track) fill.Width = track.ActualWidth * Math.Clamp(pct, 0, 100) / 100;
         }
         Set(0, $"{s.Cpu:0}%", s.Cpu);

@@ -163,7 +163,7 @@ public sealed class WindowConfig
 public sealed class AppearanceConfig
 {
     public string Theme { get; set; } = "dark";
-    public string Accent { get; set; } = "#FF8FB1";
+    public string Accent { get; set; } = "#FF375F"; // Apple system pink
     public string Mascot { get; set; } = AppConfig.DefaultMascot;
     /// <summary>"pill" (floating, Apple) or "notch" (flush with the top edge, square top corners).</summary>
     public string Shape { get; set; } = "pill";

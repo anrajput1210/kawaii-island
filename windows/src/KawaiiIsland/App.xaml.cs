@@ -1,10 +1,13 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Hardcodet.Wpf.TaskbarNotification;
-using System.IO;
+using Microsoft.Win32;
 using KawaiiIsland.Services;
 using KawaiiIsland.Services.ClaudeCode;
+using KawaiiIsland.Services.Native;
 
 namespace KawaiiIsland;
 
@@ -15,8 +18,10 @@ public partial class App : Application
     private EventWaitHandle? _wake;
     private TaskbarIcon? _tray;
     private IslandWindow? _island;
+    private SettingsWindow? _settings;
 
     public ConfigService Config { get; private set; } = null!;
+    internal IslandWindow Island => _island!;
 
     /// <summary>Runs on normal exit AND on crash, so OS-level state (e.g. the AppBar reservation) is always released.</summary>
     public static event Action? Cleanup;
@@ -41,7 +46,7 @@ public partial class App : Application
         _wake = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\KawaiiIsland.Wake");
         if (!_ownsMutex)
         {
-            _wake.Set(); // first instance brings itself forward (opens Settings once Phase 5 lands)
+            _wake.Set(); // the running instance opens Settings (spec §6)
             Shutdown();
             return;
         }
@@ -52,51 +57,55 @@ public partial class App : Application
 
         base.OnStartup(e);
         Config = new ConfigService();
+        ApplyTheme();
+        SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
         _island = new IslandWindow(Config);
         _island.Show();
         _tray = BuildTray();
 
-        ThreadPool.RegisterWaitForSingleObject(_wake, (_, _) => Dispatcher.Invoke(() => _island.ShowIsland()), null, -1, false);
+        ThreadPool.RegisterWaitForSingleObject(_wake, (_, _) => Dispatcher.BeginInvoke(ShowSettings), null, -1, false);
     }
+
+    // ---------------- theme ----------------
+
+    /// <summary>Swaps the shared brushes; everything bound with DynamicResource updates live.</summary>
+    internal void ApplyTheme()
+    {
+        var a = Config.Current.Appearance;
+        bool light = a.Theme == "light" || (a.Theme == "auto" && WindowsUsesLightTheme());
+        SetBrush("IslandBackground", light ? "#FFFFFF" : "#000000");
+        SetBrush("IslandText", light ? "#1C1C1E" : "#FFFFFF");
+        SetBrush("IslandMuted", light ? "#6E6E73" : "#8E8E93");
+        SetBrush("IslandTrack", light ? "#E0DCE6" : "#3A3A3C");
+        SetBrush("SettingsBackground", light ? "#FFFFFF" : "#1C1C21");
+        SetBrush("SettingsPanel", light ? "#F5F2F7" : "#26262D");
+        SetBrush("SettingsLine", light ? "#E5E1EA" : "#34343E");
+        SetBrush("Accent", a.Accent, fallback: "#FF8FB1");
+    }
+
+    private void SetBrush(string key, string hex, string fallback = "#000000")
+    {
+        Color color;
+        try { color = (Color)ColorConverter.ConvertFromString(hex); }
+        catch (FormatException) { color = (Color)ColorConverter.ConvertFromString(fallback); }
+        Resources[key] = new SolidColorBrush(color);
+    }
+
+    private static bool WindowsUsesLightTheme() =>
+        Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 0) is int v && v == 1;
+
+    private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
+    {
+        if (e.Category == UserPreferenceCategory.General && Config.Current.Appearance.Theme == "auto")
+            Dispatcher.BeginInvoke(ApplyTheme);
+    }
+
+    // ---------------- menus (tray + right-click on the island share one builder) ----------------
 
     private TaskbarIcon BuildTray()
     {
         var menu = new ContextMenu();
-        var island = _island!;
-        menu.Items.Add(MenuItem("Show / hide", island.ToggleVisible));
-        menu.Items.Add(new Separator());
-
-        // Checkable items flip IsChecked themselves before Click fires.
-        var appBar = new MenuItem { Header = "Reserve workspace (AppBar)", IsCheckable = true };
-        appBar.Click += (_, _) => island.SetAppBar(appBar.IsChecked);
-        var unlock = new MenuItem { Header = "Unlock to drag", IsCheckable = true };
-        unlock.Click += (_, _) => island.SetLocked(!unlock.IsChecked);
-        menu.Items.Add(appBar);
-        menu.Items.Add(unlock);
-
-        var collapse = new MenuItem { Header = "Collapse after" };
-        foreach (var (label, seconds) in new[] { ("4 seconds", 4), ("10 seconds", 10), ("15 seconds", 15), ("30 seconds", 30), ("Never", 0) })
-        {
-            var item = new MenuItem { Header = label, Tag = seconds, IsCheckable = true };
-            item.Click += (_, _) => island.SetAutoCollapse(seconds);
-            collapse.Items.Add(item);
-        }
-        menu.Items.Add(collapse);
-        menu.Items.Add(new Separator());
-        var code = new MenuItem { Header = "Code mode (Claude Code)", IsCheckable = true };
-        code.Click += (_, _) => SetCodeMode(code.IsChecked);
-        menu.Items.Add(code);
-
-        menu.Opened += (_, _) => // reflect current state every time the menu opens
-        {
-            code.IsChecked = island.CodeMode;
-            appBar.IsChecked = island.AppBarEnabled;
-            unlock.IsChecked = !island.Locked;
-            foreach (MenuItem item in collapse.Items) item.IsChecked = (int)item.Tag == island.AutoCollapseSeconds;
-        };
-        menu.Items.Add(new Separator());
-        menu.Items.Add(MenuItem("Quit", Shutdown));
-
+        menu.Opened += (_, _) => FillMenu(menu, forIsland: false); // rebuilt on every open: always current
         var tray = new TaskbarIcon
         {
             ToolTipText = "Kawaii Island",
@@ -107,11 +116,105 @@ public partial class App : Application
         return tray;
     }
 
+    internal ContextMenu IslandMenu()
+    {
+        var menu = new ContextMenu();
+        FillMenu(menu, forIsland: true);
+        return menu;
+    }
+
+    private void FillMenu(ContextMenu menu, bool forIsland)
+    {
+        var island = _island!;
+        var w = Config.Current.Window;
+        bool vertical = Placement.ParseEdge(w.DockEdge) is Edge.Left or Edge.Right;
+        menu.Items.Clear();
+
+        menu.Items.Add(forIsland ? Item(island.IsExpanded ? "Collapse" : "Expand", island.ToggleExpanded)
+                                 : Item("Show / hide", island.ToggleVisible));
+        menu.Items.Add(new Separator());
+        menu.Items.Add(Check("Reserve workspace (AppBar)", island.AppBarEnabled, island.SetAppBar));
+        menu.Items.Add(Check("Unlock to drag", !island.Locked, on => island.SetLocked(!on)));
+        menu.Items.Add(Choice("Edge", [("Top", "Top"), ("Bottom", "Bottom"), ("Left", "Left"), ("Right", "Right")],
+                              w.DockEdge, v => { w.DockEdge = v; SettingsChanged(); }));
+        menu.Items.Add(Choice("Alignment", AlignmentChoices(vertical), w.Alignment, v => { w.Alignment = v; SettingsChanged(); }));
+        menu.Items.Add(Choice("Monitor", MonitorChoices(), w.MonitorId, v => { w.MonitorId = v; SettingsChanged(); }));
+        menu.Items.Add(new Separator());
+        menu.Items.Add(Choice("Mascot", AppConfig.Mascots.Select(m => (MascotName(m), m)).ToArray(),
+                              Config.Current.Appearance.Mascot, v => { Config.Current.Appearance.Mascot = v; SettingsChanged(); }));
+        menu.Items.Add(Choice("Collapse after", CollapseChoices, island.AutoCollapseSeconds.ToString(), v => island.SetAutoCollapse(int.Parse(v))));
+        menu.Items.Add(Check("Code mode (Claude Code)", island.CodeMode, SetCodeMode));
+        menu.Items.Add(new Separator());
+        menu.Items.Add(Item("Settings…", ShowSettings));
+        menu.Items.Add(Item("Quit", Shutdown));
+    }
+
+    internal static readonly (string Label, string Value)[] CollapseChoices =
+        [("4 seconds", "4"), ("10 seconds", "10"), ("15 seconds", "15"), ("30 seconds", "30"), ("Never", "0")];
+
+    /// <summary>Values stay Left/Center/Right; side docks just label them Top/Middle/Bottom.</summary>
+    internal static (string Label, string Value)[] AlignmentChoices(bool vertical) => vertical
+        ? [("Top", "Left"), ("Middle", "Center"), ("Bottom", "Right")]
+        : [("Left", "Left"), ("Center", "Center"), ("Right", "Right")];
+
+    internal static (string Label, string Value)[] MonitorChoices() =>
+        Monitors.All().Select((m, i) => ($"Display {i + 1} · {m.Bounds.Width}×{m.Bounds.Height}{(m.Primary ? " (primary)" : "")}", m.Device)).ToArray();
+
+    internal static string MascotName(string key) => key switch
+    {
+        "kiko" => "Kiko · anime girl", "miso" => "Miso · cat", "bun" => "Bun · bunny", "bolt" => "Bolt · robot", "ribbit" => "Ribbit · frog", _ => key,
+    };
+
+    /// <summary>Persist (debounced 500 ms) and re-apply to the island (debounced 150 ms, re-docks the AppBar).</summary>
+    internal void SettingsChanged()
+    {
+        Config.SaveSoon();
+        _island!.ApplySettingsSoon();
+        _settings?.Reload();
+    }
+
+    private static MenuItem Item(string header, Action onClick)
+    {
+        var item = new MenuItem { Header = header };
+        item.Click += (_, _) => onClick();
+        return item;
+    }
+
+    private static MenuItem Check(string header, bool isChecked, Action<bool> set)
+    {
+        var item = new MenuItem { Header = header, IsCheckable = true, IsChecked = isChecked };
+        item.Click += (_, _) => set(item.IsChecked); // IsChecked already flipped by the click
+        return item;
+    }
+
+    private static MenuItem Choice(string header, (string Label, string Value)[] options, string current, Action<string> pick)
+    {
+        var parent = new MenuItem { Header = header };
+        foreach (var (label, value) in options)
+        {
+            var item = new MenuItem { Header = label, IsCheckable = true, IsChecked = string.Equals(value, current, StringComparison.OrdinalIgnoreCase) };
+            item.Click += (_, _) => pick(value);
+            parent.Items.Add(item);
+        }
+        return parent;
+    }
+
+    internal void ShowSettings()
+    {
+        if (_settings is { IsLoaded: true }) { _settings.Activate(); return; }
+        _settings = new SettingsWindow(this);
+        _settings.Closed += (_, _) => _settings = null;
+        _settings.Show();
+        _settings.Activate();
+    }
+
+    // ---------------- Code mode ----------------
+
     /// <summary>
     /// Turning Code mode on edits ~/.claude/settings.json, so it is always an explicit, confirmed user action.
     /// Off removes exactly our entries again.
     /// </summary>
-    private void SetCodeMode(bool on)
+    internal void SetCodeMode(bool on)
     {
         var code = Config.Current.Modules.Code;
         const string title = "Kawaii Island · Code mode";
@@ -153,18 +256,13 @@ public partial class App : Application
             code.Enabled = false;
             Config.SaveSoon();
         }
-    }
-
-    private static MenuItem MenuItem(string header, Action onClick)
-    {
-        var item = new MenuItem { Header = header };
-        item.Click += (_, _) => onClick();
-        return item;
+        _settings?.Reload();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         RunCleanup();
+        SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
         Config?.Dispose();
         _tray?.Dispose();
         if (_ownsMutex) _single?.ReleaseMutex();
